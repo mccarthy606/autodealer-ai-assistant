@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Cars{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Cars</h1>
+    <div class="page-actions">
+        <a href="/admin/ui/cars/new" class="btn btn-primary">+ Add car manually</a>
+    </div>
+</div>
+
+<!-- Import from MercadoLibre URL -->
+<div class="card ml-import-card" style="margin-bottom: 1.5rem; border-left: 4px solid var(--primary);">
+    <h3>Import from MercadoLibre</h3>
+    <p class="hint">Paste the link to an ML listing. Brand and model will be pre-filled from the URL, then you complete the rest (price, photos, km, year).</p>
+    <form method="post" action="/admin/ui/cars/import-ml-url" class="ml-url-form">
+        <div style="display:flex;gap:12px;align-items:flex-end;">
+            <div class="form-group" style="flex:1;">
+                <input type="text" name="ml_url" placeholder="https://auto.mercadolibre.com.ar/MLA-1234567890-..." style="font-size:15px;">
+            </div>
+            <button type="submit" class="btn btn-primary">Import</button>
+        </div>
+    </form>
+</div>
+
+{% if request.query_params.get('error') == 'no_url' %}
+<div class="alert alert-error">Please paste a MercadoLibre listing URL</div>
+{% endif %}
+{% if request.query_params.get('error') == 'invalid_url' %}
+<div class="alert alert-error">Could not parse that URL. Make sure it's a valid MercadoLibre listing link (should contain MLA-...)</div>
+{% endif %}
+
+<form class="filters-bar" method="get" action="/admin/ui/cars">
+    <input type="text" name="q" value="{{ filters.q }}" placeholder="Search brand, model...">
+    <select name="status">
+        <option value="">All statuses</option>
+        <option value="available" {{ 'selected' if filters.status == 'available' }}>Available</option>
+        <option value="in_transit" {{ 'selected' if filters.status == 'in_transit' }}>In transit</option>
+        <option value="reserved" {{ 'selected' if filters.status == 'reserved' }}>Reserved</option>
+        <option value="sold" {{ 'selected' if filters.status == 'sold' }}>Sold</option>
+    </select>
+    <select name="condition">
+        <option value="">All conditions</option>
+        <option value="zero_km" {{ 'selected' if filters.condition == 'zero_km' }}>0 km</option>
+        <option value="new" {{ 'selected' if filters.condition == 'new' }}>New</option>
+        <option value="used" {{ 'selected' if filters.condition == 'used' }}>Used</option>
+    </select>
+    <button type="submit" class="btn btn-secondary">Filter</button>
+</form>
+
+{% if request.query_params.get('imported') %}
+<div class="alert alert-success">Imported {{ request.query_params.get('imported') }} cars from CSV</div>
+{% endif %}
+
+<div class="cars-grid">
+    {% for car in items %}
+    <a href="/admin/ui/cars/{{ car.id }}" class="car-card">
+        {% if car.photos and car.photos|length > 0 %}
+        <div class="car-card-img" style="background-image: url('{{ car.photos[0] }}')"></div>
+        {% else %}
+        <div class="car-card-img car-card-img-empty">🚗</div>
+        {% endif %}
+        <div class="car-card-body">
+            <div class="car-card-title">{{ car.brand }} {{ car.model }} {{ car.year if car.year else '' }}</div>
+            {% if car.trim %}<div class="car-card-trim">{{ car.trim }}</div>{% endif %}
+            <div class="car-card-price">${{ "{:,.0f}".format(car.price) }} {{ car.currency }}</div>
+            <div class="car-card-meta">
+                {% if car.km %}<span>{{ "{:,}".format(car.km) }} km</span>{% endif %}
+                <span class="badge badge-{{ car.status.value }}">{{ car.status.value | replace('_', ' ') | title }}</span>
+            </div>
+            {% if car.photos %}<small>{{ car.photos|length }} photo{{ 's' if car.photos|length != 1 }}</small>{% endif %}
+        </div>
+    </a>
+    {% endfor %}
+</div>
+
+{% if not items %}
+<div class="empty-state">
+    <p>No cars yet. Paste a MercadoLibre link above or <a href="/admin/ui/cars/new">add a car manually</a>.</p>
+</div>
+{% endif %}
+
+<details style="margin-top: 2rem;">
+    <summary class="btn btn-secondary" style="display:inline-block;">Import from CSV</summary>
+    <div class="card" style="margin-top: 0.5rem;">
+        <p class="hint">CSV with columns: brand, model, year, price, km, condition, status</p>
+        <form method="post" action="/admin/ui/cars/import" enctype="multipart/form-data" style="display:flex;gap:12px;align-items:center;">
+            <input type="file" name="file" accept=".csv">
+            <button type="submit" class="btn btn-secondary">Import</button>
+        </form>
+    </div>
+</details>
+{% endblock %}

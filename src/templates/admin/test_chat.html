@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% block title %}Test Bot{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Test Bot</h1>
+    <p class="subtitle">Test the conversation engine as if you were a customer</p>
+</div>
+
+<div class="test-layout">
+    <div class="test-chat-area">
+        <div class="test-chat-config card">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="test-phone">Phone number</label>
+                    <input type="text" id="test-phone" value="+5491100000000" placeholder="+5491100000000">
+                </div>
+                <div class="form-group">
+                    <label for="test-channel">Channel</label>
+                    <select id="test-channel">
+                        <option value="admin_test">Test</option>
+                        <option value="whatsapp">WhatsApp</option>
+                        <option value="mercadolibre">MercadoLibre</option>
+                        <option value="web">Web</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-chat-messages" id="chat-messages">
+            <div class="chat-welcome">
+                <p>Send a message to test the bot. Try:</p>
+                <ul>
+                    <li><a href="#" onclick="sendQuick('Hola, tienen Toyota Hilux?')">Hola, tienen Toyota Hilux?</a></li>
+                    <li><a href="#" onclick="sendQuick('Hi, do you have any SUV?')">Hi, do you have any SUV?</a></li>
+                    <li><a href="#" onclick="sendQuick('Can you send me photos?')">Can you send me photos?</a></li>
+                    <li><a href="#" onclick="sendQuick('Quiero pasar mañana a la tarde. Me llamo Juan.')">Quiero pasar mañana. Me llamo Juan.</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <form class="test-chat-input" onsubmit="sendMessage(event)">
+            <input type="text" id="test-message" placeholder="Type a message..." autofocus>
+            <button type="submit" class="btn btn-primary">Send</button>
+        </form>
+    </div>
+
+    <div class="test-sidebar" id="test-sidebar">
+        <div class="card">
+            <h3 onclick="toggleAdvanced()" style="cursor:pointer">
+                Advanced
+                <span id="adv-toggle">&#9660;</span>
+            </h3>
+            <div id="advanced-panel">
+                <div class="info-list" id="adv-info">
+                    <div class="info-item"><span>Intent</span><strong id="adv-intent">-</strong></div>
+                    <div class="info-item"><span>Stage</span><strong id="adv-stage">-</strong></div>
+                    <div class="info-item"><span>Mode</span><strong id="adv-mode">-</strong></div>
+                    <div class="info-item"><span>Language</span><strong id="adv-lang">-</strong></div>
+                    <div class="info-item"><span>Lead ID</span><strong id="adv-lead">-</strong></div>
+                    <div class="info-item"><span>Handoff</span><strong id="adv-handoff">-</strong></div>
+                    <div class="info-item"><span>Conv ID</span><strong id="adv-conv">-</strong></div>
+                </div>
+                <details style="margin-top:8px">
+                    <summary>Full state JSON</summary>
+                    <pre id="adv-state" class="state-json">{}</pre>
+                </details>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const chatEl = document.getElementById('chat-messages');
+
+function addUserMsg(text) {
+    const div = document.createElement('div');
+    div.className = 'chat-msg chat-msg-in';
+    div.innerHTML = '<div class="chat-msg-bubble">' + escHtml(text) + '</div>';
+    chatEl.appendChild(div);
+    chatEl.scrollTop = chatEl.scrollHeight;
+}
+
+function addBotMsg(text, cars, photos) {
+    const div = document.createElement('div');
+    div.className = 'chat-msg chat-msg-out';
+    let html = '<div class="chat-msg-bubble">' + escHtml(text).replace(/\n/g, '<br>') + '</div>';
+
+    if (cars && cars.length > 0) {
+        html += '<div class="test-cars">';
+        cars.forEach(function(car) {
+            const photo = (car.photos && car.photos.length > 0) ? car.photos[0] : null;
+            const kmStr = car.km ? car.km.toLocaleString() + ' km' : '0 km';
+            html += '<div class="test-car-card">';
+            if (photo) {
+                html += '<img src="' + escHtml(photo) + '" class="test-car-img" onerror="this.style.display=\'none\'">';
+            }
+            html += '<div class="test-car-info">';
+            html += '<strong>' + escHtml(car.brand + ' ' + car.model + ' ' + car.year) + '</strong>';
+            html += '<span>$' + car.price.toLocaleString('es-AR', {maximumFractionDigits:0}) + ' — ' + kmStr + '</span>';
+            html += '<span class="badge badge-' + car.status + '">' + car.status.replace('_', ' ') + '</span>';
+            html += '</div></div>';
+        });
+        html += '</div>';
+    }
+
+    if (photos && photos.length > 0) {
+        html += '<div class="test-photos">';
+        photos.forEach(function(url) {
+            html += '<a href="' + escHtml(url) + '" target="_blank"><img src="' + escHtml(url) + '" class="test-photo-thumb" onerror="this.outerHTML=\'<span>📷 Photo</span>\'"></a>';
+        });
+        html += '</div>';
+    }
+
+    div.innerHTML = html;
+    chatEl.appendChild(div);
+    chatEl.scrollTop = chatEl.scrollHeight;
+}
+
+function updateAdvanced(data) {
+    document.getElementById('adv-intent').textContent = data.intent || '-';
+    document.getElementById('adv-stage').textContent = data.stage || '-';
+    document.getElementById('adv-mode').textContent = data.mode || '-';
+    document.getElementById('adv-lang').textContent = data.language || (data.state && data.state.language) || '-';
+    document.getElementById('adv-lead').textContent = data.lead_id || '-';
+    document.getElementById('adv-handoff').textContent = data.handoff_reason || '-';
+    document.getElementById('adv-conv').textContent = data.conversation_id || '-';
+    document.getElementById('adv-state').textContent = JSON.stringify(data.state || {}, null, 2);
+
+    // Update mode badge color
+    const modeEl = document.getElementById('adv-mode');
+    modeEl.className = data.mode === 'manager' ? 'text-warn' : 'text-success';
+}
+
+async function sendMessage(e) {
+    e.preventDefault();
+    const input = document.getElementById('test-message');
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    addUserMsg(text);
+
+    try {
+        const resp = await fetch('/admin/ui/test/send', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                phone: document.getElementById('test-phone').value,
+                text: text,
+                channel: document.getElementById('test-channel').value,
+            }),
+        });
+        const data = await resp.json();
+        if (data.text) {
+            addBotMsg(data.text, data.matched_cars, data.photo_urls);
+        }
+        updateAdvanced(data);
+    } catch (err) {
+        addBotMsg('Error: ' + err.message, [], []);
+    }
+}
+
+function sendQuick(text) {
+    document.getElementById('test-message').value = text;
+    document.querySelector('.test-chat-input').dispatchEvent(new Event('submit'));
+}
+
+function toggleAdvanced() {
+    const panel = document.getElementById('advanced-panel');
+    const toggle = document.getElementById('adv-toggle');
+    if (panel.style.display === 'none') {
+        panel.style.display = 'block';
+        toggle.innerHTML = '&#9660;';
+    } else {
+        panel.style.display = 'none';
+        toggle.innerHTML = '&#9654;';
+    }
+}
+
+function escHtml(str) {
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+}
+</script>
+{% endblock %}

@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}{{ car.brand }} {{ car.model }} {{ car.year }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>{{ car.display_title }}</h1>
+    <div class="page-actions">
+        <a href="/admin/ui/cars/{{ car.id }}/edit" class="btn btn-secondary">Edit</a>
+        {% if car.status.value != 'sold' %}
+        <form method="post" action="/admin/ui/cars/{{ car.id }}/sold" style="display:inline">
+            <button type="submit" class="btn btn-warn" onclick="return confirm('Mark as sold?')">Mark sold</button>
+        </form>
+        {% endif %}
+        <form method="post" action="/admin/ui/cars/{{ car.id }}/duplicate" style="display:inline">
+            <button type="submit" class="btn btn-secondary">Duplicate</button>
+        </form>
+    </div>
+</div>
+
+<div class="car-detail-layout">
+    <div class="car-detail-main">
+        <!-- Photos -->
+        {% if car.photos and car.photos|length > 0 %}
+        <div class="car-photos">
+            {% for url in car.photos %}
+            <div class="car-photo">
+                <img src="{{ url }}" alt="Photo {{ loop.index }}" onerror="this.parentNode.innerHTML='<div class=photo-error>Image unavailable</div>'">
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="card">
+            <p class="empty-photos">No photos uploaded yet. <a href="/admin/ui/cars/{{ car.id }}/edit">Add photos</a></p>
+        </div>
+        {% endif %}
+
+        <!-- Details -->
+        <div class="card">
+            <h3>Details</h3>
+            <div class="detail-grid">
+                <div class="detail-item">
+                    <span class="detail-label">Brand</span>
+                    <span class="detail-value">{{ car.brand }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Model</span>
+                    <span class="detail-value">{{ car.model }}</span>
+                </div>
+                {% if car.trim %}
+                <div class="detail-item">
+                    <span class="detail-label">Trim</span>
+                    <span class="detail-value">{{ car.trim }}</span>
+                </div>
+                {% endif %}
+                <div class="detail-item">
+                    <span class="detail-label">Year</span>
+                    <span class="detail-value">{{ car.year }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Condition</span>
+                    <span class="detail-value">{{ car.condition.value | replace('_', ' ') | title }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Kilometers</span>
+                    <span class="detail-value">{{ "{:,}".format(car.km) if car.km else '0 km' }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Price</span>
+                    <span class="detail-value detail-price">${{ "{:,.0f}".format(car.price) }} {{ car.currency }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Status</span>
+                    <span class="badge badge-{{ car.status.value }}">{{ car.status.value | replace('_', ' ') | title }}</span>
+                </div>
+                {% if car.location %}
+                <div class="detail-item">
+                    <span class="detail-label">Location</span>
+                    <span class="detail-value">{{ car.location }}</span>
+                </div>
+                {% endif %}
+            </div>
+            {% if car.description %}
+            <div class="description-block">
+                <h4>Description</h4>
+                <p>{{ car.description }}</p>
+            </div>
+            {% endif %}
+            {% if car.tags %}
+            <div class="tag-list">
+                {% for tag in car.tags %}
+                <span class="tag">{{ tag }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="car-detail-sidebar">
+        <!-- WhatsApp message -->
+        <div class="card">
+            <h3>Copy WhatsApp message</h3>
+            <div class="wa-msg-tabs">
+                <button class="wa-tab active" onclick="showWaMsg('es')">Spanish</button>
+                <button class="wa-tab" onclick="showWaMsg('en')">English</button>
+            </div>
+            <pre class="wa-msg" id="wa-msg-es">{{ wa_msg_es }}</pre>
+            <pre class="wa-msg" id="wa-msg-en" style="display:none">{{ wa_msg_en }}</pre>
+            <button class="btn btn-primary btn-full" onclick="copyWaMsg()">Copy to clipboard</button>
+        </div>
+
+        {% if car.ml_item_id %}
+        <div class="card">
+            <h3>MercadoLibre</h3>
+            <p>Item ID: <code>{{ car.ml_item_id }}</code></p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function showWaMsg(lang) {
+    document.querySelectorAll('.wa-msg').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.wa-tab').forEach(el => el.classList.remove('active'));
+    document.getElementById('wa-msg-' + lang).style.display = 'block';
+    event.target.classList.add('active');
+}
+function copyWaMsg() {
+    const visible = document.querySelector('.wa-msg[style*="block"]') || document.querySelector('.wa-msg');
+    navigator.clipboard.writeText(visible.textContent).then(() => {
+        const btn = event.target;
+        btn.textContent = 'Copied!';
+        setTimeout(() => btn.textContent = 'Copy to clipboard', 1500);
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Dashboard</h1>
+    <p class="subtitle">Overview of your dealership activity</p>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-number">{{ convs_today }}</div>
+        <div class="stat-label">Conversations today</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ leads_today }}</div>
+        <div class="stat-label">Leads today</div>
+    </div>
+    <div class="stat-card stat-card-warn">
+        <div class="stat-number">{{ pending_handoffs }}</div>
+        <div class="stat-label">Pending handoffs</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ cars_available }}</div>
+        <div class="stat-label">Cars available</div>
+    </div>
+</div>
+
+{% if top_searches %}
+<div class="card">
+    <h3>Top searches (last 7 days)</h3>
+    <div class="tag-list">
+        {% for s in top_searches %}
+        <span class="tag">{{ s.brand }} <small>({{ s.count }})</small></span>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<div class="quick-actions">
+    <h3>Quick actions</h3>
+    <div class="action-grid">
+        <a href="/admin/ui/cars/new" class="action-card">
+            <span class="action-icon">+</span>
+            <span>Add car</span>
+        </a>
+        <a href="/admin/ui/test" class="action-card">
+            <span class="action-icon">💬</span>
+            <span>Test bot</span>
+        </a>
+        <a href="/admin/ui/conversations" class="action-card">
+            <span class="action-icon">📥</span>
+            <span>Inbox</span>
+        </a>
+        <a href="/admin/ui/integrations" class="action-card">
+            <span class="action-icon">🔗</span>
+            <span>Integrations</span>
+        </a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Dashboard{% endblock %} | AutoDealer</title>
+    <link rel="stylesheet" href="/static/admin.css">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <nav class="topbar">
+        <div class="topbar-brand">
+            <a href="/admin/ui">🚗 AutoDealer</a>
+        </div>
+        <div class="topbar-links">
+            <a href="/admin/ui" class="{% if request.url.path == '/admin/ui' %}active{% endif %}">Dashboard</a>
+            <a href="/admin/ui/cars" class="{% if '/cars' in request.url.path %}active{% endif %}">Cars</a>
+            <a href="/admin/ui/leads" class="{% if '/leads' in request.url.path %}active{% endif %}">Leads</a>
+            <a href="/admin/ui/conversations" class="{% if '/conversations' in request.url.path %}active{% endif %}">Conversations</a>
+            <a href="/admin/ui/metrics" class="{% if '/metrics' in request.url.path %}active{% endif %}">Metrics</a>
+            <a href="/admin/ui/settings" class="{% if '/settings' in request.url.path %}active{% endif %}">Settings</a>
+            <a href="/admin/ui/integrations" class="{% if '/integrations' in request.url.path %}active{% endif %}">Integrations</a>
+            <a href="/admin/ui/test" class="{% if '/test' in request.url.path %}active{% endif %}">Test Bot</a>
+            <a href="/admin/ui/logout" class="nav-logout">Log out</a>
+        </div>
+    </nav>
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

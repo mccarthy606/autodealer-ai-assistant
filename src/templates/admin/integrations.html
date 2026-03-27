@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Integrations{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Integrations</h1>
+</div>
+
+<div class="integrations-grid">
+    <!-- MercadoLibre -->
+    <div class="card integration-card">
+        <div class="integration-header">
+            <h3>MercadoLibre</h3>
+            <span class="badge {% if ml_configured %}badge-connected{% else %}badge-disconnected{% endif %}">
+                {{ 'API Connected' if ml_configured else 'Manual import' }}
+            </span>
+        </div>
+
+        <!-- Import by URL -->
+        <div class="ml-import-section">
+            <h4>Import car from ML link</h4>
+            <p class="hint">Paste a link to any MercadoLibre listing to add it to your inventory.</p>
+            <form method="post" action="/admin/ui/cars/import-ml-url" class="import-form">
+                <div style="display:flex;gap:12px;align-items:flex-end;">
+                    <div class="form-group" style="flex:1">
+                        <input type="text" name="ml_url" placeholder="https://auto.mercadolibre.com.ar/MLA-..." style="font-size:15px;">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Import</button>
+                </div>
+            </form>
+        </div>
+
+        {% if ml_cars %}
+        <hr style="margin: 16px 0; border: none; border-top: 1px solid var(--border);">
+        <h4>Linked ML listings ({{ ml_cars|length }})</h4>
+        <table class="compact-table">
+            <thead><tr><th>Car</th><th>ML Item ID</th><th>Photos</th><th>Price</th></tr></thead>
+            <tbody>
+                {% for car in ml_cars %}
+                <tr>
+                    <td><a href="/admin/ui/cars/{{ car.id }}">{{ car.brand }} {{ car.model }} {{ car.year if car.year else '' }}</a></td>
+                    <td><code>{{ car.ml_item_id }}</code></td>
+                    <td>{{ car.photos|length if car.photos else 0 }}</td>
+                    <td>${{ "{:,.0f}".format(car.price) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        {% if ml_configured %}
+        <div class="info-list" style="margin-top: 16px;">
+            <div class="info-item">
+                <span>API Token</span>
+                <strong class="text-success">Set</strong>
+            </div>
+            <div class="info-item">
+                <span>Webhook URL</span>
+                <code>/webhooks/mercadolibre</code>
+            </div>
+        </div>
+        {% else %}
+        <details style="margin-top: 16px;">
+            <summary>API setup (optional — for auto-answering questions)</summary>
+            <div class="integration-setup">
+                <ol>
+                    <li>Register app at <a href="https://developers.mercadolibre.com.ar" target="_blank">developers.mercadolibre.com.ar</a></li>
+                    <li>Get access token via OAuth</li>
+                    <li>Set in <code>.env</code>:
+                        <pre>ML_ACCESS_TOKEN=your_token
+ML_USER_ID=your_seller_id</pre>
+                    </li>
+                    <li>Webhook: <code>https://your-domain/webhooks/mercadolibre</code></li>
+                </ol>
+            </div>
+        </details>
+        {% endif %}
+    </div>
+
+    <!-- WhatsApp -->
+    <div class="card integration-card">
+        <div class="integration-header">
+            <h3>WhatsApp Business Cloud</h3>
+            <span class="badge {% if wa_configured %}badge-connected{% else %}badge-disconnected{% endif %}">
+                {{ 'Connected' if wa_configured else 'Not configured' }}
+            </span>
+        </div>
+        <div class="info-list">
+            <div class="info-item">
+                <span>Phone Number ID</span>
+                <strong>{{ wa_phone_id }}</strong>
+            </div>
+            <div class="info-item">
+                <span>Verify Token</span>
+                <strong>{{ 'Set' if wa_verify_token else 'Not set' }}</strong>
+            </div>
+            <div class="info-item">
+                <span>Webhook URL</span>
+                <code>/webhooks/whatsapp_cloud</code>
+            </div>
+        </div>
+        {% if not wa_configured %}
+        <div class="integration-setup">
+            <h4>Setup</h4>
+            <ol>
+                <li>Create a Meta Business App at <a href="https://developers.facebook.com" target="_blank">developers.facebook.com</a></li>
+                <li>Enable WhatsApp Business API</li>
+                <li>Set in <code>.env</code>:
+                    <pre>WHATSAPP_CLOUD_TOKEN=your_token
+WHATSAPP_PHONE_NUMBER_ID=your_phone_id
+WHATSAPP_VERIFY_TOKEN=your_verify_token</pre>
+                </li>
+                <li>Webhook: <code>https://your-domain/webhooks/whatsapp_cloud</code></li>
+                <li>Restart: <code>docker compose restart api</code></li>
+            </ol>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

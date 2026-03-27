@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit car' if is_edit else 'Add car' }}{% endblock %}
+{% block content %}
+
+{% set ml_import = request.query_params.get('ml_item_id') %}
+{% set prefill_brand = request.query_params.get('brand', '') %}
+{% set prefill_model = request.query_params.get('model', '') %}
+{% set prefill_trim = request.query_params.get('trim', '') %}
+{% set prefill_ml_id = request.query_params.get('ml_item_id', '') %}
+{% set prefill_ml_url = request.query_params.get('ml_url', '') %}
+
+<div class="page-header">
+    <h1>{{ 'Edit car' if is_edit else ('Import from MercadoLibre' if ml_import else 'Add new car') }}</h1>
+</div>
+
+{% if ml_import %}
+<div class="alert alert-info" style="display:flex;align-items:center;gap:12px;">
+    <strong>ML Import:</strong>
+    <span>{{ prefill_ml_id }}</span>
+    {% if prefill_ml_url %}
+    <a href="{{ prefill_ml_url }}" target="_blank" style="margin-left:auto;"">Open on MercadoLibre &rarr;</a>
+    {% endif %}
+</div>
+<p class="hint" style="margin-bottom:1rem;">
+    Brand and model were extracted from the URL. Please fill in the <strong>price, year, kilometers</strong>, and paste <strong>photo URLs</strong> from the ML listing.
+</p>
+{% endif %}
+
+{% if request.query_params.get('info') == 'already_exists' %}
+<div class="alert alert-info">This ML listing is already in your inventory. You can edit it below.</div>
+{% endif %}
+
+<form method="post" action="{{ '/admin/ui/cars/' ~ car.id ~ '/edit' if is_edit else ('/admin/ui/cars/import-ml-url-save' if ml_import else '/admin/ui/cars/new') }}" class="car-wizard">
+    {% if ml_import %}
+    <input type="hidden" name="ml_item_id" value="{{ prefill_ml_id }}">
+    <input type="hidden" name="ml_url" value="{{ prefill_ml_url }}">
+    {% endif %}
+
+    <!-- Step 1: Basic info -->
+    <div class="card wizard-step">
+        <h3>Step 1: Basic information</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="brand">Brand *</label>
+                <input type="text" name="brand" id="brand" value="{{ car.brand if car else prefill_brand }}" placeholder="e.g. Toyota" required>
+            </div>
+            <div class="form-group">
+                <label for="model">Model *</label>
+                <input type="text" name="model" id="model" value="{{ car.model if car else prefill_model }}" placeholder="e.g. Hilux" required>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="trim">Trim / Version</label>
+                <input type="text" name="trim" id="trim" value="{{ car.trim if car else prefill_trim }}" placeholder="e.g. SRV 4x4 AT">
+                <small class="hint">Optional trim or variant name</small>
+            </div>
+            <div class="form-group">
+                <label for="year">Year *</label>
+                <input type="number" name="year" id="year" value="{{ car.year if car else '' }}" min="1990" max="2030" required {% if ml_import %}autofocus{% endif %}>
+                {% if ml_import %}<small class="hint" style="color:var(--warning);">Please fill in</small>{% endif %}
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="condition">Condition *</label>
+                <select name="condition" id="condition">
+                    <option value="used" {{ 'selected' if car and car.condition.value == 'used' }}>Used</option>
+                    <option value="zero_km" {{ 'selected' if car and car.condition.value == 'zero_km' }}>0 km</option>
+                    <option value="new" {{ 'selected' if car and car.condition.value == 'new' }}>New</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="km">Kilometers</label>
+                <input type="number" name="km" id="km" value="{{ car.km if car and car.km else '' }}" placeholder="e.g. 45000">
+                <small class="hint">Leave empty for 0 km vehicles</small>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="price">Price * (ARS)</label>
+                <input type="number" name="price" id="price" value="{{ car.price if car else '' }}" placeholder="e.g. 15000000" step="1" required>
+                {% if ml_import %}<small class="hint" style="color:var(--warning);">Copy from the ML listing</small>{% endif %}
+            </div>
+            <div class="form-group">
+                <label for="currency">Currency</label>
+                <select name="currency" id="currency">
+                    <option value="ARS" {{ 'selected' if not car or car.currency == 'ARS' }}>ARS</option>
+                    <option value="USD" {{ 'selected' if car and car.currency == 'USD' }}>USD</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="status">Status</label>
+            <select name="status" id="status">
+                <option value="available" {{ 'selected' if not car or car.status.value == 'available' }}>Available</option>
+                <option value="in_transit" {{ 'selected' if car and car.status.value == 'in_transit' }}>In transit</option>
+                <option value="reserved" {{ 'selected' if car and car.status.value == 'reserved' }}>Reserved</option>
+                <option value="sold" {{ 'selected' if car and car.status.value == 'sold' }}>Sold</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Step 2: Photos -->
+    <div class="card wizard-step">
+        <h3>Step 2: Photos</h3>
+        {% if ml_import %}
+        <p class="hint" style="margin-bottom:12px;">
+            Open the <a href="{{ prefill_ml_url }}" target="_blank">ML listing</a>, right-click on each photo &rarr; "Copy image address", then paste below (one URL per line).
+        </p>
+        {% endif %}
+        <div class="form-group">
+            <label for="photos">Photo URLs (one per line, up to 10)</label>
+            <textarea name="photos" id="photos" rows="6" placeholder="https://http2.mlstatic.com/D_NQ_NP_...jpg&#10;https://http2.mlstatic.com/D_NQ_NP_...jpg">{{ '\n'.join(car.photos) if car and car.photos else '' }}</textarea>
+            <small class="hint">Paste image URLs, one per line. Tip: right-click photos on ML &rarr; "Copy image address"</small>
+        </div>
+        <div class="photo-preview" id="photo-preview">
+            {% if car and car.photos %}
+            {% for url in car.photos[:6] %}
+            <img src="{{ url }}" alt="Car photo" class="preview-thumb" onerror="this.style.display='none'">
+            {% endfor %}
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Step 3: Details & Publish -->
+    <div class="card wizard-step">
+        <h3>Step 3: Details & publish</h3>
+        <div class="form-group">
+            <label for="title">Custom title</label>
+            <input type="text" name="title" id="title" value="{{ car.title if car and car.title else '' }}" placeholder="Auto-generated if empty">
+            <small class="hint">Leave empty to auto-generate from brand/model/year</small>
+        </div>
+        <div class="form-group">
+            <label for="location">Location</label>
+            <input type="text" name="location" id="location" value="{{ car.location if car else '' }}" placeholder="e.g. Buenos Aires, CABA">
+        </div>
+        <div class="form-group">
+            <label for="tags">Tags (comma-separated)</label>
+            <input type="text" name="tags" id="tags" value="{{ ', '.join(car.tags) if car and car.tags else '' }}" placeholder="e.g. 0km, financing, offer">
+            <small class="hint">Use tags like: 0km, financing, tradein, offer</small>
+        </div>
+        <div class="form-group">
+            <label for="description">Description</label>
+            <textarea name="description" id="description" rows="4" placeholder="Describe the car, its features, and condition...">{{ car.description if car else '' }}</textarea>
+        </div>
+        {% if not ml_import %}
+        <div class="form-group">
+            <label for="ml_item_id">MercadoLibre item ID</label>
+            <input type="text" name="ml_item_id" id="ml_item_id" value="{{ car.ml_item_id if car and car.ml_item_id else '' }}" placeholder="e.g. MLA-123456789">
+            <small class="hint">Optional: link to your MercadoLibre listing</small>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="form-actions">
+        <a href="/admin/ui/cars" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary btn-lg">{{ 'Save changes' if is_edit else 'Save car' }}</button>
+    </div>
+</form>
+
+<script>
+// Live photo preview
+const photosTextarea = document.getElementById('photos');
+const previewDiv = document.getElementById('photo-preview');
+
+if (photosTextarea) {
+    photosTextarea.addEventListener('input', function() {
+        const urls = this.value.split('\n').filter(u => u.trim().startsWith('http'));
+        previewDiv.innerHTML = '';
+        urls.slice(0, 6).forEach(function(url) {
+            const img = document.createElement('img');
+            img.src = url.trim();
+            img.className = 'preview-thumb';
+            img.onerror = function() { this.style.display = 'none'; };
+            previewDiv.appendChild(img);
+        });
+    });
+}
+</script>
+{% endblock %}

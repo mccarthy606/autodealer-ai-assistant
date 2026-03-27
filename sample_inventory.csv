@@ -1,0 +1,8 @@
+brand,model,trim,year,condition,km,price,status,location,external_id
+Toyota,Hilux,SRV,2024,new,,25000000,available,"Av. Libertador 1234",toyota_hilux_2024_001
+Ford,Ranger,XLT,2023,used,15000,18000000,available,"Av. Libertador 1234",ford_ranger_2023_001
+Volkswagen,Amarok,V6,2023,zero_km,,22000000,in_transit,"En tránsito",vw_amarok_2023_001
+Fiat,Cronos,Drive,2024,new,,8500000,available,"Av. Libertador 1234",fiat_cronos_2024_001
+Chevrolet,Onix,Plus,2023,used,25000,7200000,available,"Av. Libertador 1234",chevrolet_onix_2023_001
+Toyota,Corolla,XEi,2022,used,40000,15000000,available,"Av. Libertador 1234",toyota_corolla_2022_001
+Honda,HR-V,EX,2024,new,,19500000,available,"Av. Libertador 1234",honda_hrv_2024_001

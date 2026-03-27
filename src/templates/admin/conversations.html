@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Conversations{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Conversations</h1>
+</div>
+
+<div class="inbox-list">
+    {% for item in conv_data %}
+    {% set c = item.conv %}
+    <a href="/admin/ui/conversations/{{ c.id }}" class="inbox-item {% if c.mode == 'manager' %}inbox-item-manager{% endif %}">
+        <div class="inbox-item-left">
+            <div class="inbox-avatar">{{ c.user_phone[-4:] }}</div>
+            <div class="inbox-info">
+                <div class="inbox-phone">{{ c.user_phone }}</div>
+                <div class="inbox-preview">{{ item.last_msg }}</div>
+            </div>
+        </div>
+        <div class="inbox-item-right">
+            <span class="badge {% if c.mode == 'bot' %}badge-bot{% else %}badge-manager{% endif %}">
+                {{ 'BOT' if c.mode == 'bot' else 'MANAGER' }}
+            </span>
+            <div class="inbox-source">{{ c.channel or 'whatsapp' }}</div>
+            <div class="inbox-time">{{ c.last_message_at.strftime('%d/%m %H:%M') if c.last_message_at else '' }}</div>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+
+{% if not conv_data %}
+<div class="empty-state">
+    <p>No conversations yet. Use <a href="/admin/ui/test">Test Bot</a> to start one.</p>
+</div>
+{% endif %}
+{% endblock %}

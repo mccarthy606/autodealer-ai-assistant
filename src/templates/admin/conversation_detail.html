@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Conversation #{{ conv.id }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>{{ conv.user_phone }}</h1>
+    <div class="page-actions">
+        <span class="badge badge-lg {% if conv.mode == 'bot' %}badge-bot{% else %}badge-manager{% endif %}">
+            {{ 'BOT ACTIVE' if conv.mode == 'bot' else 'MANAGER ACTIVE' }}
+        </span>
+        {% if conv.handoff_reason %}
+        <span class="badge badge-reason">{{ reason_label }}</span>
+        {% endif %}
+    </div>
+</div>
+
+<div class="conv-layout">
+    <div class="conv-chat">
+        <div class="chat-messages">
+            {% for msg in messages %}
+            <div class="chat-msg chat-msg-{{ msg.direction.value }}">
+                <div class="chat-msg-bubble">
+                    {{ msg.text or '' }}
+                    {% if msg.attachments %}
+                    <div class="chat-attachments">
+                        {% for url in msg.attachments %}
+                        <a href="{{ url }}" target="_blank" class="chat-attachment-link">
+                            <img src="{{ url }}" alt="Photo" class="chat-attachment-img" onerror="this.outerHTML='<span>📷 Photo link</span>'">
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="chat-msg-time">{{ msg.created_at.strftime('%H:%M') if msg.created_at else '' }}</div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Manager reply form -->
+        <div class="chat-reply">
+            {% if conv.mode == 'manager' %}
+            <form method="post" action="/admin/ui/conversations/{{ conv.id }}/send" class="reply-form">
+                <input type="text" name="text" placeholder="Type a message as manager..." autofocus>
+                <button type="submit" class="btn btn-primary">Send</button>
+            </form>
+            {% else %}
+            <p class="reply-info">Bot is handling this conversation. Take over to reply manually.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="conv-sidebar">
+        <div class="card">
+            <h3>Actions</h3>
+            <div class="sidebar-actions">
+                {% if conv.mode == 'bot' %}
+                <form method="post" action="/admin/ui/conversations/{{ conv.id }}/takeover">
+                    <button type="submit" class="btn btn-warn btn-full">Take over (Manager)</button>
+                </form>
+                {% else %}
+                <form method="post" action="/admin/ui/conversations/{{ conv.id }}/return-bot">
+                    <button type="submit" class="btn btn-primary btn-full">Return to bot</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Info</h3>
+            <div class="info-list">
+                <div class="info-item">
+                    <span>Phone</span>
+                    <strong>{{ conv.user_phone }}</strong>
+                </div>
+                <div class="info-item">
+                    <span>Channel</span>
+                    <strong>{{ conv.channel or 'whatsapp' }}</strong>
+                </div>
+                <div class="info-item">
+                    <span>Mode</span>
+                    <strong>{{ conv.mode }}</strong>
+                </div>
+                {% if conv.handoff_reason %}
+                <div class="info-item">
+                    <span>Handoff reason</span>
+                    <strong>{{ reason_label }}</strong>
+                </div>
+                {% endif %}
+                <div class="info-item">
+                    <span>Messages</span>
+                    <strong>{{ messages|length }}</strong>
+                </div>
+            </div>
+        </div>
+
+        {% if conv.state %}
+        <div class="card">
+            <h3>State</h3>
+            <div class="info-list">
+                {% if conv.state.get('stage') %}
+                <div class="info-item"><span>Stage</span><strong>{{ conv.state.stage }}</strong></div>
+                {% endif %}
+                {% if conv.state.get('language') %}
+                <div class="info-item"><span>Language</span><strong>{{ conv.state.language }}</strong></div>
+                {% endif %}
+                {% if conv.state.get('name') %}
+                <div class="info-item"><span>Name</span><strong>{{ conv.state.name }}</strong></div>
+                {% endif %}
+                {% if conv.state.get('selected_car_id') %}
+                <div class="info-item"><span>Selected car</span><a href="/admin/ui/cars/{{ conv.state.selected_car_id }}">#{{ conv.state.selected_car_id }}</a></div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

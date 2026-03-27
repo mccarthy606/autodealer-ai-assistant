@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Leads{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Leads</h1>
+</div>
+
+<form class="filters-bar" method="get" action="/admin/ui/leads">
+    <select name="intent">
+        <option value="">All intents</option>
+        <option value="visit" {{ 'selected' if filters.intent == 'visit' }}>Visit</option>
+        <option value="info" {{ 'selected' if filters.intent == 'info' }}>Info</option>
+        <option value="financing" {{ 'selected' if filters.intent == 'financing' }}>Financing</option>
+        <option value="trade_in" {{ 'selected' if filters.intent == 'trade_in' }}>Trade-in</option>
+    </select>
+    <select name="status">
+        <option value="">All statuses</option>
+        <option value="new" {{ 'selected' if filters.status == 'new' }}>New</option>
+        <option value="qualified" {{ 'selected' if filters.status == 'qualified' }}>Qualified</option>
+        <option value="handed_off" {{ 'selected' if filters.status == 'handed_off' }}>Handed off</option>
+        <option value="closed" {{ 'selected' if filters.status == 'closed' }}>Closed</option>
+    </select>
+    <select name="source">
+        <option value="">All sources</option>
+        <option value="whatsapp" {{ 'selected' if filters.source == 'whatsapp' }}>WhatsApp</option>
+        <option value="mercadolibre" {{ 'selected' if filters.source == 'mercadolibre' }}>MercadoLibre</option>
+        <option value="web" {{ 'selected' if filters.source == 'web' }}>Web</option>
+        <option value="admin_test" {{ 'selected' if filters.source == 'admin_test' }}>Test</option>
+    </select>
+    <button type="submit" class="btn btn-secondary">Filter</button>
+</form>
+
+<div class="table-wrapper">
+    <table>
+        <thead>
+            <tr>
+                <th>Name / Phone</th>
+                <th>Intent</th>
+                <th>Status</th>
+                <th>Source</th>
+                <th>Interested in</th>
+                <th>Created</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for lead in leads %}
+            <tr>
+                <td>
+                    <strong>{{ lead.name or '-' }}</strong><br>
+                    <small>{{ lead.phone }}</small>
+                </td>
+                <td><span class="badge badge-intent-{{ lead.intent.value }}">{{ lead.intent.value | replace('_', ' ') | title }}</span></td>
+                <td><span class="badge badge-lead-{{ lead.status.value }}">{{ lead.status.value | replace('_', ' ') | title }}</span></td>
+                <td>{{ lead.source or '-' }}</td>
+                <td>
+                    {% if lead.preferred_brand %}{{ lead.preferred_brand }} {{ lead.preferred_model or '' }}{% else %}-{% endif %}
+                </td>
+                <td><small>{{ lead.created_at.strftime('%d/%m %H:%M') if lead.created_at else '-' }}</small></td>
+                <td>
+                    {% if lead.conversation_id %}
+                    <a href="/admin/ui/conversations/{{ lead.conversation_id }}" class="btn btn-sm btn-secondary">Open conversation</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if not leads %}
+<div class="empty-state">
+    <p>No leads yet. Leads are created automatically when customers request visits, financing, or trade-ins.</p>
+</div>
+{% endif %}
+{% endblock %}

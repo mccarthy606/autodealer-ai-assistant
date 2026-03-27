@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | AutoDealer</title>
+    <link rel="stylesheet" href="/static/admin.css">
+</head>
+<body class="login-page">
+    <div class="login-card">
+        <div class="login-logo">🚗 AutoDealer</div>
+        <h2>Admin Panel</h2>
+        {% if error %}
+        <div class="alert alert-error">Incorrect password</div>
+        {% endif %}
+        <form method="post" action="/admin/ui/login">
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" name="password" id="password" placeholder="Enter admin password" autofocus required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-full">Log in</button>
+        </form>
+    </div>
+</body>
+</html>

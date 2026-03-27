@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Metrics{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Metrics</h1>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-number">{{ convs_today }}</div>
+        <div class="stat-label">Conversations today</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ leads_today }}</div>
+        <div class="stat-label">Leads today</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ handoffs_today }}</div>
+        <div class="stat-label">Handoffs today</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ conversion }}%</div>
+        <div class="stat-label">Conversion rate</div>
+    </div>
+</div>
+
+<div class="metrics-grid">
+    <div class="card">
+        <h3>Leads by source</h3>
+        {% if leads_by_source %}
+        <table class="compact-table">
+            <thead><tr><th>Source</th><th>Count</th></tr></thead>
+            <tbody>
+                {% for item in leads_by_source %}
+                <tr>
+                    <td>{{ item.source | title }}</td>
+                    <td><strong>{{ item.count }}</strong></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted">No data yet</p>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h3>Top searched (last 7 days)</h3>
+        {% if top_searches %}
+        <table class="compact-table">
+            <thead><tr><th>Brand / Model</th><th>Searches</th></tr></thead>
+            <tbody>
+                {% for item in top_searches %}
+                <tr>
+                    <td>{{ item.brand }} {{ item.model }}</td>
+                    <td><strong>{{ item.count }}</strong></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted">No data yet</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
