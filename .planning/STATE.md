@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Executing Phase 02
-stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-03-27T21:18:00Z"
+status: Executing Phase 03
+stopped_at: Completed 03-01-PLAN.md
+last_updated: "2026-03-27T21:50:34.000Z"
 progress:
   total_phases: 9
-  completed_phases: 1
-  total_plans: 5
-  completed_plans: 4
+  completed_phases: 2
+  total_plans: 7
+  completed_plans: 6
 ---
 
 # Project State
@@ -19,11 +19,11 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** Bot catches ML leads, writes customer on WhatsApp first, closes on dealership visit.
-**Current focus:** Phase 02 — security-hardening
+**Current focus:** Phase 03 — engine-consolidation
 
 ## Current Position
 
-Phase: 02 (security-hardening) — EXECUTING
+Phase: 03 (engine-consolidation) — EXECUTING
 Plan: 2 of 2
 
 ## Performance Metrics
@@ -48,6 +48,7 @@ Plan: 2 of 2
 *Updated after each plan completion*
 | Phase 01 P01 | 4min | 1 tasks | 7 files |
 | Phase 02 P01 | 4min | 2 tasks | 7 files |
+| Phase 03 P01 | 8min | 1 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -64,6 +65,8 @@ Recent decisions affecting current work:
 - [Phase 02]: Empty ALLOWED_ORIGINS = deny all cross-origin (admin UI same-origin Jinja2 unaffected)
 - [Phase 02]: Rate limiter returns tuple (allowed, retry_after) for better client UX
 - [Phase 02]: Webhook reads raw body before JSON parse to prevent stream exhaustion
+- [Phase 03]: Symmetric language switch via lang.split('-')[0] comparison handles es-AR variant
+- [Phase 03]: Manager mode must explicitly set result.language from saved state
 
 ### Pending Todos
 
@@ -77,6 +80,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-27T21:18:00Z
-Stopped at: Completed 02-01-PLAN.md
-Resume file: .planning/phases/02-security-hardening/02-01-SUMMARY.md
+Last session: 2026-03-27T21:50:34.000Z
+Stopped at: Completed 03-01-PLAN.md
+Resume file: .planning/phases/03-engine-consolidation/03-01-SUMMARY.md

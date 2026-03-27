@@ -14,8 +14,8 @@
 
 ### Conversation Engine (Inbound — уже есть, доработать)
 - [ ] **ENG-01**: Единый движок разговоров для всех каналов (merge двух engine)
-- [ ] **ENG-02**: Стейт-машина корректно обрабатывает все интенты (search, photos, details, visit, financing, trade-in, human)
-- [ ] **ENG-03**: Multilingual ответы (es-AR / en) с авто-определением языка
+- [x] **ENG-02**: Стейт-машина корректно обрабатывает все интенты (search, photos, details, visit, financing, trade-in, human)
+- [x] **ENG-03**: Multilingual ответы (es-AR / en) с авто-определением языка
 - [ ] **ENG-04**: Message deduplication по WhatsApp message ID (wamid)
 
 ### Follow-Up Automation
@@ -104,8 +104,8 @@
 | SEC-03 | Phase 2 | Pending |
 | SEC-04 | Phase 2 | Pending |
 | ENG-01 | Phase 3 | Pending |
-| ENG-02 | Phase 3 | Pending |
-| ENG-03 | Phase 3 | Pending |
+| ENG-02 | Phase 3 | Complete (03-01) |
+| ENG-03 | Phase 3 | Complete (03-01) |
 | ENG-04 | Phase 3 | Pending |
 | OUT-01 | Phase 4 | Pending |
 | OUT-02 | Phase 4 | Pending |

@@ -64,7 +64,7 @@ Plans:
   4. All seven intents (search, photos, details, visit, financing, trade-in, human) trigger correct state transitions
 **Plans**: 2 plans
 Plans:
-- [ ] 03-01-PLAN.md — State machine verification + language stickiness fix + comprehensive tests
+- [x] 03-01-PLAN.md — State machine verification + language stickiness fix + comprehensive tests
 - [ ] 03-02-PLAN.md — WhatsApp message deduplication via wamid column + webhook dedup check
 
 ### Phase 4: Outbound Flow
@@ -148,7 +148,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9
 |-------|----------------|--------|-----------|
 | 1. Refactoring & Tech Debt | 3/3 | Planning complete | - |
 | 2. Security Hardening | 2/2 | Executing | - |
-| 3. Engine Consolidation | 0/2 | Planning complete | - |
+| 3. Engine Consolidation | 1/2 | Executing | - |
 | 4. Outbound Flow | 0/? | Not started | - |
 | 5. Follow-Up Automation | 0/? | Not started | - |
 | 6. Multi-Tenancy | 0/? | Not started | - |
