@@ -71,10 +71,10 @@ class WhatsAppCloudAdapter(ChannelAdapter):
             return {"error": str(e)}
 
 
-def parse_incoming_message(payload: dict) -> Optional[tuple[str, str]]:
+def parse_incoming_message(payload: dict) -> Optional[tuple[str, str, Optional[str]]]:
     """
     Parse incoming Meta WhatsApp Cloud webhook payload.
-    Returns (phone, text) or None.
+    Returns (phone, text, wamid) or None.
     """
     try:
         entry = payload.get("entry", [{}])[0]
@@ -99,8 +99,9 @@ def parse_incoming_message(payload: dict) -> Optional[tuple[str, str]]:
                 text = ""
         else:
             text = ""
+        wamid = msg.get("id")
         if phone and text:
-            return phone, text
+            return phone, text, wamid
         return None
     except (IndexError, KeyError):
         return None

@@ -7,10 +7,13 @@ from fastapi import APIRouter, Depends, Request, Query
 from fastapi.responses import JSONResponse, PlainTextResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from sqlalchemy import select
+
 from src.api.deps import get_db
 from src.api.rate_limit import check_rate_limit
 from src.config import settings
 from src.adapters.whatsapp_cloud import WhatsAppCloudAdapter, parse_incoming_message, verify_webhook
+from src.db.models import Message
 from src.services.conversation_engine import process_message
 
 router = APIRouter(prefix="/webhooks/whatsapp_cloud", tags=["webhooks-whatsapp"])
@@ -46,9 +49,17 @@ async def receive_whatsapp_message(
     if not parsed:
         return {"status": "ok", "message": "no actionable message"}
 
-    phone, text = parsed
+    phone, text, wamid = parsed
     if not text.strip():
         return {"status": "ok"}
+
+    # Dedup: check if wamid already processed (ENG-04)
+    if wamid:
+        stmt = select(Message.id).where(Message.wamid == wamid).limit(1)
+        existing = await db.execute(stmt)
+        if existing.scalar_one_or_none() is not None:
+            logger.info("Duplicate wamid=%s, skipping", wamid)
+            return {"status": "ok", "message": "duplicate"}
 
     # Rate limit: 20 requests per 60s per phone (per D-07)
     allowed, retry_after = await check_rate_limit(
@@ -68,6 +79,7 @@ async def receive_whatsapp_message(
         phone=phone,
         text=text,
         channel="whatsapp",
+        wamid=wamid,
     )
 
     # Send reply via WhatsApp Cloud

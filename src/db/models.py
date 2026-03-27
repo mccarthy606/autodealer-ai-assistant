@@ -21,6 +21,7 @@ from sqlalchemy import (
     String,
     Text,
     Boolean,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
@@ -196,10 +197,21 @@ class Message(Base):
     text = Column(Text)
     raw = Column(JSONB)
     channel = Column(String(32))
+    wamid = Column(String(128), nullable=True)
     attachments = Column(JSONB, default=list)
     created_at = Column(DateTime, default=_utcnow)
 
     conversation = relationship("Conversation", back_populates="messages")
+
+    __table_args__ = (
+        Index(
+            "ix_msg_conv_wamid",
+            "conversation_id",
+            "wamid",
+            unique=True,
+            postgresql_where=text("wamid IS NOT NULL"),
+        ),
+    )
 
 
 class Lead(Base):

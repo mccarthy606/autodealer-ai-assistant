@@ -65,6 +65,7 @@ async def process_message(
     phone: str,
     text: str,
     channel: str = "whatsapp",
+    wamid: Optional[str] = None,
 ) -> EngineResult:
     """
     Main entry point. Process incoming message and return structured result.
@@ -81,6 +82,7 @@ async def process_message(
         direction=MessageDirectionEnum.inbound,
         text=text,
         channel=channel,
+        wamid=wamid,
     )
     session.add(msg_in)
     await session.flush()
