@@ -101,6 +101,7 @@ async def process_message(
         result.text = ""
         result.mode = "manager"
         result.stage = state.get("stage", "HANDOFF")
+        result.language = state.get("language", "es")
         result.state = state
         result.handoff_reason = conv.handoff_reason
         # Still save the message but no bot response
@@ -112,8 +113,8 @@ async def process_message(
     detected_lang = detect_language(text)
     if not lang:
         lang = detected_lang
-    elif detected_lang != "es" and lang.startswith("es"):
-        # Switch to English if user writes in English
+    elif detected_lang != lang.split("-")[0]:
+        # User switched language - update to match (symmetric: es->en and en->es)
         lang = detected_lang
     state["language"] = lang
     result.language = lang
@@ -147,8 +148,8 @@ async def process_message(
 
     # 8. Get dealership info
     dealer = await _get_dealership(session, dealership_id)
-    address = dealer.address or "nuestro salón" if dealer else "nuestro salón"
-    hours = dealer.business_hours or ""
+    address = (dealer.address or "nuestro salón") if dealer else "nuestro salón"
+    hours = (dealer.business_hours or "") if dealer else ""
 
     # 9. Process by intent
     stage = state.get("stage", "NEW")
