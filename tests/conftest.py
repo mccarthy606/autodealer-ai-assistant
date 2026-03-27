@@ -6,9 +6,10 @@ from typing import AsyncGenerator
 
 import pytest
 import pytest_asyncio
-from sqlalchemy import create_engine, event, text
+from sqlalchemy import create_engine, event, text, JSON
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import Session
+from sqlalchemy.dialects.postgresql import JSONB
 
 from src.db.session import Base
 from src.db.models import *  # noqa - import all models
@@ -18,10 +19,18 @@ from src.db.models import *  # noqa - import all models
 TEST_DB_URL = "sqlite+aiosqlite:///:memory:"
 
 
+# Map PostgreSQL JSONB to generic JSON for SQLite compatibility
+from sqlalchemy.ext.compiler import compiles
+
+@compiles(JSONB, "sqlite")
+def _compile_jsonb_sqlite(element, compiler, **kw):
+    return "JSON"
+
+
 @pytest_asyncio.fixture
 async def db_session() -> AsyncGenerator[AsyncSession, None]:
     """Create a test database session with SQLite."""
-    engine = create_async_engine(TEST_DB_URL, echo=False)
+    engine = create_async_engine(TEST_DB_URL, echo=False, json_serializer=json.dumps, json_deserializer=json.loads)
 
     # SQLite JSON support
     @event.listens_for(engine.sync_engine, "connect")
