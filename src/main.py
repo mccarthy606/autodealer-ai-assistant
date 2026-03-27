@@ -13,6 +13,7 @@ from src.api.routes import (
     admin_conversations, admin_settings,
 )
 from src.api.routes.webhook_cloud import router as whatsapp_cloud_router
+from src.api.routes.webhook_lemon import router as lemon_router
 from src.api.routes.webhook_ml import router as ml_router
 from src.config import settings
 
@@ -44,6 +45,7 @@ app.include_router(admin_settings.router)
 app.include_router(webhooks.router)
 app.include_router(whatsapp_cloud_router)
 app.include_router(ml_router)
+app.include_router(lemon_router)
 app.include_router(celery_routes.router)
 app.include_router(import_routes.router, prefix="/import")
 app.include_router(import_routes.router, prefix="/admin/import")
