@@ -50,7 +50,7 @@ Plans:
   4. Webhook endpoints return 429 after exceeding rate limit threshold
 **Plans**: 2 plans
 Plans:
-- [ ] 02-01-PLAN.md — Config + CORS lockdown + rate_limit refactor + Lemon Squeezy webhook
+- [x] 02-01-PLAN.md — Config + CORS lockdown + rate_limit refactor + Lemon Squeezy webhook
 - [ ] 02-02-PLAN.md — Auth Redis+bcrypt migration + async conversion + rate limit wiring
 
 ### Phase 3: Engine Consolidation
@@ -144,7 +144,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Refactoring & Tech Debt | 0/3 | Planning complete | - |
-| 2. Security Hardening | 0/2 | Planning complete | - |
+| 2. Security Hardening | 1/2 | Executing | - |
 | 3. Engine Consolidation | 0/? | Not started | - |
 | 4. Outbound Flow | 0/? | Not started | - |
 | 5. Follow-Up Automation | 0/? | Not started | - |

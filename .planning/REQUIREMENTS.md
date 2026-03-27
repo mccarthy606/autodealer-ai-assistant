@@ -45,10 +45,10 @@
 - [ ] **BILL-04**: Grace period при проблемах с оплатой
 
 ### Security & Hardening
-- [ ] **SEC-01**: CORS ограничен конкретными доменами (не wildcard)
+- [x] **SEC-01**: CORS ограничен конкретными доменами (не wildcard)
 - [ ] **SEC-02**: Admin auth через Redis-сессии с хешированием паролей (bcrypt)
-- [ ] **SEC-03**: Lemon Squeezy webhook signature verification
-- [ ] **SEC-04**: Rate limiting на webhook endpoints
+- [x] **SEC-03**: Lemon Squeezy webhook signature verification
+- [x] **SEC-04**: Rate limiting на webhook endpoints
 
 ### Refactoring
 - [x] **REF-01**: Объединить conversation_engine.py и orchestrator.py в единый движок
