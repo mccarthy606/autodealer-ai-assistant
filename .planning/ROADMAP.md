@@ -79,7 +79,7 @@ Plans:
   5. When lead confirms a visit, a lead record is created and the assigned manager receives a notification
 **Plans**: 2 plans
 Plans:
-- [ ] 04-01-PLAN.md — Adapter extensions: send_template(), get_buyer_contact(), phone normalizer, ml_item_id index
+- [x] 04-01-PLAN.md — Adapter extensions: send_template(), get_buyer_contact(), phone normalizer, ml_item_id index
 - [ ] 04-02-PLAN.md — Outbound service pipeline + OUTBOUND_INIT engine state + webhook wiring + tests
 
 ### Phase 5: Follow-Up Automation
@@ -152,7 +152,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9
 | 1. Refactoring & Tech Debt | 3/3 | Planning complete | - |
 | 2. Security Hardening | 2/2 | Executing | - |
 | 3. Engine Consolidation | 1/2 | Executing | - |
-| 4. Outbound Flow | 0/2 | Planning complete | - |
+| 4. Outbound Flow | 1/2 | Executing | - |
 | 5. Follow-Up Automation | 0/? | Not started | - |
 | 6. Multi-Tenancy | 0/? | Not started | - |
 | 7. Admin Dashboard & Analytics | 0/? | Not started | - |
