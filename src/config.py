@@ -33,6 +33,11 @@ class Settings(BaseSettings):
     smtp_pass: str = ""
     smtp_to: str = ""
 
+    # Security
+    allowed_origins: str = ""                    # comma-separated CORS origins
+    admin_password_hash: str = ""                # bcrypt hash for admin auth
+    lemon_squeezy_webhook_secret: str = ""       # HMAC secret for webhook verification
+
     # App
     default_dealership_id: int = 1
     admin_password: str = ""

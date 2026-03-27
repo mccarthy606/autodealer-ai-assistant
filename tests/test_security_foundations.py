@@ -61,30 +61,36 @@ class TestRateLimiter:
         """check_rate_limit uses custom prefix in Redis key."""
         from src.api.rate_limit import check_rate_limit
 
-        mock_redis = AsyncMock()
-        mock_pipe = AsyncMock()
-        mock_redis.pipeline.return_value = mock_pipe
+        mock_pipe = MagicMock()
+        mock_pipe.incr = MagicMock(return_value=mock_pipe)
+        mock_pipe.expire = MagicMock(return_value=mock_pipe)
+        mock_pipe.ttl = MagicMock(return_value=mock_pipe)
         mock_pipe.execute = AsyncMock(return_value=[1, True, 55])
 
-        with patch("src.api.rate_limit.get_redis", return_value=mock_redis):
+        mock_redis = MagicMock()
+        mock_redis.pipeline.return_value = mock_pipe
+
+        with patch("src.api.rate_limit.get_redis", new_callable=AsyncMock, return_value=mock_redis):
             result = await check_rate_limit("user123", prefix="api")
             # Verify that the key used includes the custom prefix
-            mock_pipe.incr.assert_called_once()
-            call_args = mock_pipe.incr.call_args[0][0]
-            assert call_args == "api:user123"
+            mock_pipe.incr.assert_called_once_with("api:user123")
 
     @pytest.mark.asyncio
     async def test_check_rate_limit_denied_returns_retry_after(self):
         """check_rate_limit returns (False, retry_after>0) when limit exceeded."""
         from src.api.rate_limit import check_rate_limit
 
-        mock_redis = AsyncMock()
-        mock_pipe = AsyncMock()
-        mock_redis.pipeline.return_value = mock_pipe
+        mock_pipe = MagicMock()
+        mock_pipe.incr = MagicMock(return_value=mock_pipe)
+        mock_pipe.expire = MagicMock(return_value=mock_pipe)
+        mock_pipe.ttl = MagicMock(return_value=mock_pipe)
         # count=21 (over limit of 20), expire ok, ttl=45
         mock_pipe.execute = AsyncMock(return_value=[21, True, 45])
 
-        with patch("src.api.rate_limit.get_redis", return_value=mock_redis):
+        mock_redis = MagicMock()
+        mock_redis.pipeline.return_value = mock_pipe
+
+        with patch("src.api.rate_limit.get_redis", new_callable=AsyncMock, return_value=mock_redis):
             allowed, retry_after = await check_rate_limit("user123", limit=20)
             assert allowed is False
             assert retry_after > 0
