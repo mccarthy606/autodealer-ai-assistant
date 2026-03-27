@@ -79,6 +79,41 @@ class MercadoLibreAdapter(ChannelAdapter):
             logger.error("ML questions error: %s", e)
             return []
 
+    async def get_buyer_contact(self, question_id: str) -> Optional[dict]:
+        """
+        Fetch buyer contact info from ML question (api_version=4).
+        Returns {phone, email, name} or None if unavailable.
+        For vehicles category, ML provides contact info when buyer clicks
+        'Quiero que me contacten'. Per D-04.
+        """
+        if not self.is_configured:
+            logger.info("[ML MOCK] get_buyer_contact question_id=%s", question_id)
+            return None
+
+        url = f"{ML_API_URL}/questions/{question_id}?api_version=4"
+        try:
+            async with httpx.AsyncClient(timeout=15) as client:
+                resp = await client.get(url, headers=self._headers())
+                if resp.status_code != 200:
+                    logger.warning("ML buyer contact fetch failed: status=%s", resp.status_code)
+                    return None
+                data = resp.json()
+                buyer = data.get("from", {})
+                phone_data = buyer.get("phone", {})
+                if phone_data and phone_data.get("number"):
+                    area = phone_data.get("area_code", "")
+                    number = phone_data.get("number", "")
+                    from src.services.phone_utils import normalize_ar_phone
+                    normalized = normalize_ar_phone(area, number)
+                    return {
+                        "phone": normalized,
+                        "email": buyer.get("email"),
+                        "name": buyer.get("first_name", ""),
+                    }
+        except Exception as e:
+            logger.warning("ML buyer contact error: %s", e)
+        return None
+
     async def _post(self, url: str, payload: dict) -> dict:
         try:
             async with httpx.AsyncClient(timeout=15) as client:

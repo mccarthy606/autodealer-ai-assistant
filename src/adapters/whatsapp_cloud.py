@@ -54,6 +54,28 @@ class WhatsAppCloudAdapter(ChannelAdapter):
             results.append(r)
         return {"status": "sent", "count": len(results), "results": results}
 
+    async def send_template(
+        self, to: str, template_name: str, language_code: str,
+        components: list[dict],
+    ) -> dict:
+        """Send a template message via WhatsApp Cloud API. Per D-05."""
+        if not self.is_configured:
+            logger.info("[WhatsApp MOCK] send_template to=%s template=%s", to, template_name)
+            return {"status": "mock", "to": to, "template": template_name}
+
+        url = f"{GRAPH_API_URL}/{self.phone_number_id}/messages"
+        payload = {
+            "messaging_product": "whatsapp",
+            "to": to,
+            "type": "template",
+            "template": {
+                "name": template_name,
+                "language": {"code": language_code},
+                "components": components,
+            },
+        }
+        return await self._post(url, payload)
+
     async def _post(self, url: str, payload: dict) -> dict:
         try:
             async with httpx.AsyncClient(timeout=15) as client:
