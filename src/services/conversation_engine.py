@@ -156,6 +156,12 @@ async def process_message(
     # 9. Process by intent
     stage = state.get("stage", "NEW")
 
+    # --- OUTBOUND_INIT: customer replied to our outbound template ---
+    if stage == "OUTBOUND_INIT":
+        state["stage"] = "PRESENTING"
+        stage = "PRESENTING"
+        logger.info("Outbound conversation activated: conv=%s", conv.id)
+
     # --- GREETING ---
     if intent == GREETING and stage == "NEW":
         result.text = responder.get_response(GREETING, lang)

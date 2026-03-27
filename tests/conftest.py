@@ -93,6 +93,30 @@ async def sample_car(db_session: AsyncSession, dealership: Dealership) -> Invent
 
 
 @pytest_asyncio.fixture
+async def sample_car_with_ml_id(db_session: AsyncSession, dealership: Dealership) -> InventoryItem:
+    """Create a sample car with ml_item_id for outbound tests."""
+    car = InventoryItem(
+        dealership_id=dealership.id,
+        brand="Toyota",
+        model="Hilux",
+        trim="SRV 4x4",
+        year=2023,
+        condition=ConditionEnum.used,
+        km=45000,
+        price=18000000,
+        currency="ARS",
+        status=StatusEnum.available,
+        location="Buenos Aires",
+        description="Excelente estado",
+        photos=["https://example.com/hilux1.jpg"],
+        ml_item_id="MLA1234567890",
+    )
+    db_session.add(car)
+    await db_session.flush()
+    return car
+
+
+@pytest_asyncio.fixture
 async def sample_car_no_photos(db_session: AsyncSession, dealership: Dealership) -> InventoryItem:
     """Create a car without photos."""
     car = InventoryItem(

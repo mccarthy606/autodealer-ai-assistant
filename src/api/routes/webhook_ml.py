@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.api.deps import get_db
 from src.config import settings
 from src.adapters.mercadolibre import MercadoLibreAdapter, parse_incoming_question
-from src.services.conversation_engine import process_message
+from src.services.outbound_service import handle_ml_inquiry
 
 router = APIRouter(prefix="/webhooks/mercadolibre", tags=["webhooks-ml"])
 logger = logging.getLogger(__name__)
@@ -22,7 +22,7 @@ async def receive_ml_notification(
 ) -> dict[str, Any]:
     """
     Receive MercadoLibre notifications (questions, orders, etc).
-    For questions: process through engine and send answer.
+    For questions: trigger outbound flow (WhatsApp first contact) + answer on ML.
     """
     try:
         payload = await request.json()
@@ -36,7 +36,7 @@ async def receive_ml_notification(
     question_id = parsed["question_id"]
     logger.info("ML question received: %s", question_id)
 
-    # Fetch the actual question text from ML API
+    # Fetch the actual question data from ML API
     adapter = MercadoLibreAdapter()
     if not adapter.is_configured:
         logger.info("[ML MOCK] Question %s - adapter not configured, skipping", question_id)
@@ -60,19 +60,37 @@ async def receive_ml_notification(
     if not question_text:
         return {"status": "ok"}
 
-    # Use item_id or from_user as phone identifier
-    phone = f"ml_{from_user}" if from_user else f"ml_{question_id}"
+    # Outbound flow: try to contact customer on WhatsApp
+    try:
+        outbound_result = await handle_ml_inquiry(
+            session=db,
+            dealership_id=settings.default_dealership_id,
+            question_id=question_id,
+            item_id=item_id,
+            from_user_id=from_user,
+            question_text=question_text,
+        )
+        logger.info(
+            "Outbound result: method=%s success=%s message=%s",
+            outbound_result.method, outbound_result.success, outbound_result.message,
+        )
 
-    result = await process_message(
-        session=db,
-        dealership_id=settings.default_dealership_id,
-        phone=phone,
-        text=question_text,
-        channel="mercadolibre",
-    )
+        # If we sent WhatsApp template, also answer the ML question with a brief note
+        if outbound_result.method == "whatsapp_template":
+            try:
+                await adapter.send_text(
+                    question_id,
+                    "Hola! Ya te enviamos la info por WhatsApp. Cualquier duda, escribinos por ahi!",
+                )
+            except Exception as e:
+                logger.warning("Failed to send ML acknowledgment: %s", e)
 
-    # Send answer
-    if result.text:
-        await adapter.send_text(question_id, result.text)
+        # If method was "ml_answer", the outbound service already answered on ML
+    except Exception as e:
+        logger.error("Outbound flow error: %s", e)
+        try:
+            await adapter.send_text(question_id, "Hola! Gracias por tu consulta. Te respondemos a la brevedad.")
+        except Exception:
+            pass
 
     return {"status": "ok", "question_id": question_id}
