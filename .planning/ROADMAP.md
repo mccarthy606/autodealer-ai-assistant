@@ -35,7 +35,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. All existing tests still pass after refactoring
 **Plans**: 3 plans
 Plans:
-- [ ] 01-01-PLAN.md — Engine merge: absorb LLM layer from orchestrator, delete dead code
+- [x] 01-01-PLAN.md — Engine merge: absorb LLM layer from orchestrator, delete dead code
 - [ ] 01-02-PLAN.md — Admin UI split: break admin_ui.py into 5 domain modules
 - [ ] 01-03-PLAN.md — datetime fix: replace all datetime.utcnow() with datetime.now(UTC)
 
