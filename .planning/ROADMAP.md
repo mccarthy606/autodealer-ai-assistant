@@ -36,8 +36,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 3 plans
 Plans:
 - [x] 01-01-PLAN.md — Engine merge: absorb LLM layer from orchestrator, delete dead code
-- [ ] 01-02-PLAN.md — Admin UI split: break admin_ui.py into 5 domain modules
-- [ ] 01-03-PLAN.md — datetime fix: replace all datetime.utcnow() with datetime.now(UTC)
+- [x] 01-02-PLAN.md — Admin UI split: break admin_ui.py into 5 domain modules
+- [x] 01-03-PLAN.md — datetime fix: replace all datetime.utcnow() with datetime.now(UTC)
 
 ### Phase 2: Security Hardening
 **Goal**: Application endpoints are protected against common attack vectors
@@ -48,7 +48,10 @@ Plans:
   2. Admin login uses bcrypt-hashed passwords stored in DB with Redis-backed sessions
   3. WhatsApp webhook rejects requests with invalid Meta signature
   4. Webhook endpoints return 429 after exceeding rate limit threshold
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 02-01-PLAN.md — Config + CORS lockdown + rate_limit refactor + Lemon Squeezy webhook
+- [ ] 02-02-PLAN.md — Auth Redis+bcrypt migration + async conversion + rate limit wiring
 
 ### Phase 3: Engine Consolidation
 **Goal**: Unified conversation engine handles all inbound channels with correct behavior
@@ -141,7 +144,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Refactoring & Tech Debt | 0/3 | Planning complete | - |
-| 2. Security Hardening | 0/? | Not started | - |
+| 2. Security Hardening | 0/2 | Planning complete | - |
 | 3. Engine Consolidation | 0/? | Not started | - |
 | 4. Outbound Flow | 0/? | Not started | - |
 | 5. Follow-Up Automation | 0/? | Not started | - |
