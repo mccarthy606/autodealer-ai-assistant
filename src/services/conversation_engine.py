@@ -6,7 +6,7 @@ State machine stages:
 """
 
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any, Optional
 
 from sqlalchemy import select
@@ -104,7 +104,7 @@ async def process_message(
         result.state = state
         result.handoff_reason = conv.handoff_reason
         # Still save the message but no bot response
-        conv.last_message_at = datetime.utcnow()
+        conv.last_message_at = datetime.now(UTC)
         return result
 
     # 5. Detect language + save
@@ -408,7 +408,7 @@ async def process_message(
 
     # 12. Update conversation state
     conv.state = state
-    conv.last_message_at = datetime.utcnow()
+    conv.last_message_at = datetime.now(UTC)
     result.state = state
     result.stage = state.get("stage", "NEW")
     result.mode = conv.mode or "bot"
@@ -500,7 +500,7 @@ async def _do_handoff(
     """Execute handoff: update conversation mode and log event."""
     conv.mode = "manager"
     conv.handoff_reason = reason
-    conv.last_handoff_at = datetime.utcnow()
+    conv.last_handoff_at = datetime.now(UTC)
     state["stage"] = "HANDOFF"
     result.mode = "manager"
     result.handoff_reason = reason

@@ -194,8 +194,8 @@ async def get_metrics(
     did = dealership_id or settings.default_dealership_id
 
     # Conversations per day (last 7 days)
-    from datetime import datetime, timedelta
-    today = datetime.utcnow().date()
+    from datetime import UTC, datetime, timedelta
+    today = datetime.now(UTC).date()
     conv_per_day = []
     for i in range(7):
         d = today - timedelta(days=i)

@@ -1,7 +1,7 @@
 """Lead creation service. Auto-creates leads from conversations, idempotent."""
 
 import logging
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any, Optional
 
 from sqlalchemy import select, and_
@@ -38,7 +38,7 @@ async def create_lead_from_conversation(
     Returns lead_id or None if duplicate.
     """
     # Idempotency check
-    cutoff = datetime.utcnow() - timedelta(minutes=30)
+    cutoff = datetime.now(UTC) - timedelta(minutes=30)
     intent_enum = _INTENT_MAP.get(intent, LeadIntentEnum.info)
 
     stmt = select(Lead).where(

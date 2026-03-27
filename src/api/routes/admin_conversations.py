@@ -1,7 +1,7 @@
 """Admin conversation routes -- viewer, send, takeover, return-bot."""
 
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -110,7 +110,7 @@ async def conversation_send(conv_id: int, request: Request, db: AsyncSession = D
         channel=conv.channel,
     )
     db.add(msg)
-    conv.last_message_at = datetime.utcnow()
+    conv.last_message_at = datetime.now(UTC)
 
     # TODO: Send via channel adapter (WhatsApp/ML) if configured
     # For now: saved to DB, visible in conversation
@@ -131,7 +131,7 @@ async def conversation_takeover(conv_id: int, request: Request, db: AsyncSession
     if conv:
         conv.mode = "manager"
         conv.handoff_reason = "manual_takeover"
-        conv.last_handoff_at = datetime.utcnow()
+        conv.last_handoff_at = datetime.now(UTC)
     return RedirectResponse(url=f"/admin/ui/conversations/{conv_id}", status_code=302)
 
 

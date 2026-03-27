@@ -3,7 +3,7 @@
 import csv
 import io
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, Request
@@ -224,7 +224,7 @@ async def car_update(car_id: int, request: Request, db: AsyncSession = Depends(g
     except ValueError:
         pass
 
-    car.updated_at = datetime.utcnow()
+    car.updated_at = datetime.now(UTC)
     return RedirectResponse(url=f"/admin/ui/cars/{car_id}", status_code=302)
 
 
@@ -241,7 +241,7 @@ async def car_mark_sold(car_id: int, request: Request, db: AsyncSession = Depend
     car = r.scalar_one_or_none()
     if car:
         car.status = StatusEnum.sold
-        car.updated_at = datetime.utcnow()
+        car.updated_at = datetime.now(UTC)
     return RedirectResponse(url=f"/admin/ui/cars/{car_id}", status_code=302)
 
 
@@ -428,7 +428,7 @@ async def import_ml_url_save(request: Request, db: AsyncSession = Depends(get_db
             existing.title = title
             existing.description = description or existing.description
             existing.location = location or existing.location
-            existing.updated_at = datetime.utcnow()
+            existing.updated_at = datetime.now(UTC)
             await db.flush()
             return RedirectResponse(url=f"/admin/ui/cars/{existing.id}?saved=1", status_code=302)
 

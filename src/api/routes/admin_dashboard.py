@@ -1,7 +1,7 @@
 """Admin dashboard routes -- home, auth, test chat, metrics."""
 
 import logging
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -65,7 +65,7 @@ async def dashboard(request: Request, db: AsyncSession = Depends(get_db)):
         return redir
 
     did = settings.default_dealership_id
-    today = datetime.utcnow().date()
+    today = datetime.now(UTC).date()
     today_start = datetime.combine(today, datetime.min.time())
 
     # Conversations today
@@ -175,7 +175,7 @@ async def metrics_page(request: Request, db: AsyncSession = Depends(get_db)):
         return redir
 
     did = settings.default_dealership_id
-    today = datetime.utcnow().date()
+    today = datetime.now(UTC).date()
     today_start = datetime.combine(today, datetime.min.time())
 
     # Conversations today

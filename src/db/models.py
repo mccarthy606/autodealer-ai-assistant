@@ -1,9 +1,14 @@
 """SQLAlchemy models."""
 
 import enum
-from datetime import datetime
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
+
+
+def _utcnow() -> datetime:
+    """UTC-aware now, compatible with SQLAlchemy default/onupdate."""
+    return datetime.now(UTC)
 
 from sqlalchemy import (
     Column,
@@ -90,7 +95,7 @@ class Dealership(Base):
     whatsapp_phone_number_id = Column(String(64))
     whatsapp_verify_token = Column(String(128))
     ml_user_id = Column(String(64))
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=_utcnow)
 
     inventory_items = relationship("InventoryItem", back_populates="dealership")
     conversations = relationship("Conversation", back_populates="dealership")
@@ -125,8 +130,8 @@ class InventoryItem(Base):
     external_id = Column(String(128))
     source = Column(String(32), default="manual")
 
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
 
     dealership = relationship("Dealership", back_populates="inventory_items")
 
@@ -162,9 +167,9 @@ class Conversation(Base):
     mode = Column(String(16), default="bot")
     handoff_reason = Column(String(64))
     last_handoff_at = Column(DateTime)
-    last_message_at = Column(DateTime, default=datetime.utcnow)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    last_message_at = Column(DateTime, default=_utcnow)
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
 
     dealership = relationship("Dealership", back_populates="conversations")
     messages = relationship("Message", back_populates="conversation", order_by="Message.created_at")
@@ -192,7 +197,7 @@ class Message(Base):
     raw = Column(JSONB)
     channel = Column(String(32))
     attachments = Column(JSONB, default=list)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=_utcnow)
 
     conversation = relationship("Conversation", back_populates="messages")
 
@@ -220,7 +225,7 @@ class Lead(Base):
     handoff_reason = Column(String(64))
     conversation_id = Column(Integer, ForeignKey("conversations.id", ondelete="SET NULL"), nullable=True)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=_utcnow)
 
     dealership = relationship("Dealership", back_populates="leads")
 
@@ -234,7 +239,7 @@ class Event(Base):
     payload = Column(JSONB, default=dict)
     conversation_id = Column(Integer, nullable=True)
     lead_id = Column(Integer, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=_utcnow)
 
     dealership = relationship("Dealership", back_populates="events")
 
