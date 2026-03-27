@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 @router.get("/settings", response_class=HTMLResponse)
 async def settings_page(request: Request, db: AsyncSession = Depends(get_db)):
-    redir = auth_check(request)
+    redir = await auth_check(request)
     if redir:
         return redir
 
@@ -38,7 +38,7 @@ async def settings_page(request: Request, db: AsyncSession = Depends(get_db)):
 
 @router.post("/settings")
 async def settings_save(request: Request, db: AsyncSession = Depends(get_db)):
-    redir = auth_check(request)
+    redir = await auth_check(request)
     if redir:
         return redir
 
@@ -59,7 +59,7 @@ async def settings_save(request: Request, db: AsyncSession = Depends(get_db)):
 
 @router.get("/integrations", response_class=HTMLResponse)
 async def integrations_page(request: Request, db: AsyncSession = Depends(get_db)):
-    redir = auth_check(request)
+    redir = await auth_check(request)
     if redir:
         return redir
 

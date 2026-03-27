@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 @router.get("/conversations", response_class=HTMLResponse)
 async def conversations_page(request: Request, db: AsyncSession = Depends(get_db)):
-    redir = auth_check(request)
+    redir = await auth_check(request)
     if redir:
         return redir
 
@@ -58,7 +58,7 @@ async def conversations_page(request: Request, db: AsyncSession = Depends(get_db
 
 @router.get("/conversations/{conv_id}", response_class=HTMLResponse)
 async def conversation_detail(conv_id: int, request: Request, db: AsyncSession = Depends(get_db)):
-    redir = auth_check(request)
+    redir = await auth_check(request)
     if redir:
         return redir
 
@@ -88,7 +88,7 @@ async def conversation_detail(conv_id: int, request: Request, db: AsyncSession =
 @router.post("/conversations/{conv_id}/send")
 async def conversation_send(conv_id: int, request: Request, db: AsyncSession = Depends(get_db)):
     """Manager sends a message from the inbox."""
-    redir = auth_check(request)
+    redir = await auth_check(request)
     if redir:
         return redir
 
@@ -121,7 +121,7 @@ async def conversation_send(conv_id: int, request: Request, db: AsyncSession = D
 @router.post("/conversations/{conv_id}/takeover")
 async def conversation_takeover(conv_id: int, request: Request, db: AsyncSession = Depends(get_db)):
     """Switch to manager mode."""
-    redir = auth_check(request)
+    redir = await auth_check(request)
     if redir:
         return redir
 
@@ -138,7 +138,7 @@ async def conversation_takeover(conv_id: int, request: Request, db: AsyncSession
 @router.post("/conversations/{conv_id}/return-bot")
 async def conversation_return_bot(conv_id: int, request: Request, db: AsyncSession = Depends(get_db)):
     """Return to bot mode."""
-    redir = auth_check(request)
+    redir = await auth_check(request)
     if redir:
         return redir
 

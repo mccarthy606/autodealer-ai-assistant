@@ -4,11 +4,12 @@ import logging
 from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.deps import get_db
+from src.api.rate_limit import check_rate_limit
 from src.api.auth import (
     create_session, clear_session, remove_session, is_authenticated, _check_password,
 )
@@ -36,13 +37,24 @@ async def login_page(request: Request):
 
 @router.post("/login")
 async def login_submit(request: Request):
-    if not settings.admin_password:
+    # Rate limit: 5 attempts per 60s per IP (per D-08)
+    client_ip = request.client.host if request.client else "unknown"
+    allowed, retry_after = await check_rate_limit(
+        key=client_ip, limit=5, window_seconds=60, prefix="rate:login"
+    )
+    if not allowed:
+        return JSONResponse(
+            {"error": "rate limited"},
+            status_code=429,
+            headers={"Retry-After": str(retry_after)},
+        )
+    if not settings.admin_password and not settings.admin_password_hash:
         return RedirectResponse(url="/admin/ui", status_code=302)
     form = await request.form()
     password = form.get("password", "")
     if _check_password(password):
         resp = RedirectResponse(url="/admin/ui", status_code=302)
-        create_session(resp)
+        await create_session(resp)
         return resp
     return RedirectResponse(url="/admin/ui/login?error=1", status_code=302)
 
@@ -50,7 +62,7 @@ async def login_submit(request: Request):
 @router.get("/logout")
 async def logout_page(request: Request):
     session = request.cookies.get("admin_session")
-    remove_session(session)
+    await remove_session(session)
     resp = RedirectResponse(url="/admin/ui/login" if settings.admin_password else "/admin/ui", status_code=302)
     clear_session(resp)
     return resp
@@ -60,7 +72,7 @@ async def logout_page(request: Request):
 
 @router.get("", response_class=HTMLResponse)
 async def dashboard(request: Request, db: AsyncSession = Depends(get_db)):
-    redir = auth_check(request)
+    redir = await auth_check(request)
     if redir:
         return redir
 
@@ -129,7 +141,7 @@ async def dashboard(request: Request, db: AsyncSession = Depends(get_db)):
 
 @router.get("/test", response_class=HTMLResponse)
 async def test_chat_page(request: Request):
-    redir = auth_check(request)
+    redir = await auth_check(request)
     if redir:
         return redir
     return templates.TemplateResponse("admin/test_chat.html", {"request": request})
@@ -139,7 +151,7 @@ async def test_chat_page(request: Request):
 async def test_chat_send(request: Request, db: AsyncSession = Depends(get_db)):
     """Process test message through conversation engine."""
     session_cookie = request.cookies.get("admin_session")
-    if not is_authenticated(session_cookie):
+    if not await is_authenticated(session_cookie):
         return {"error": "not_authenticated"}
 
     body = await request.json()
@@ -170,7 +182,7 @@ async def test_chat_send(request: Request, db: AsyncSession = Depends(get_db)):
 
 @router.get("/metrics", response_class=HTMLResponse)
 async def metrics_page(request: Request, db: AsyncSession = Depends(get_db)):
-    redir = auth_check(request)
+    redir = await auth_check(request)
     if redir:
         return redir
 

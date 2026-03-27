@@ -4,10 +4,11 @@ import logging
 from typing import Any
 
 from fastapi import APIRouter, Depends, Request, Query
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.deps import get_db
+from src.api.rate_limit import check_rate_limit
 from src.config import settings
 from src.adapters.whatsapp_cloud import WhatsAppCloudAdapter, parse_incoming_message, verify_webhook
 from src.services.conversation_engine import process_message
@@ -48,6 +49,17 @@ async def receive_whatsapp_message(
     phone, text = parsed
     if not text.strip():
         return {"status": "ok"}
+
+    # Rate limit: 20 requests per 60s per phone (per D-07)
+    allowed, retry_after = await check_rate_limit(
+        key=phone, limit=20, window_seconds=60, prefix="rate:whatsapp"
+    )
+    if not allowed:
+        return JSONResponse(
+            {"error": "rate limited"},
+            status_code=429,
+            headers={"Retry-After": str(retry_after)},
+        )
 
     # Process through engine
     result = await process_message(

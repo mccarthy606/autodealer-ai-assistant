@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 @router.get("/leads", response_class=HTMLResponse)
 async def leads_page(request: Request, db: AsyncSession = Depends(get_db)):
-    redir = auth_check(request)
+    redir = await auth_check(request)
     if redir:
         return redir
 

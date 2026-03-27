@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 @router.get("/cars", response_class=HTMLResponse)
 async def cars_list(request: Request, db: AsyncSession = Depends(get_db)):
-    redir = auth_check(request)
+    redir = await auth_check(request)
     if redir:
         return redir
 
@@ -70,7 +70,7 @@ async def cars_list(request: Request, db: AsyncSession = Depends(get_db)):
 
 @router.get("/cars/new", response_class=HTMLResponse)
 async def car_new(request: Request):
-    redir = auth_check(request)
+    redir = await auth_check(request)
     if redir:
         return redir
     return templates.TemplateResponse("admin/car_form.html", {
@@ -82,7 +82,7 @@ async def car_new(request: Request):
 
 @router.post("/cars/new")
 async def car_create(request: Request, db: AsyncSession = Depends(get_db)):
-    redir = auth_check(request)
+    redir = await auth_check(request)
     if redir:
         return redir
 
@@ -135,7 +135,7 @@ async def car_create(request: Request, db: AsyncSession = Depends(get_db)):
 
 @router.get("/cars/{car_id}", response_class=HTMLResponse)
 async def car_detail(car_id: int, request: Request, db: AsyncSession = Depends(get_db)):
-    redir = auth_check(request)
+    redir = await auth_check(request)
     if redir:
         return redir
 
@@ -171,7 +171,7 @@ async def car_detail(car_id: int, request: Request, db: AsyncSession = Depends(g
 
 @router.get("/cars/{car_id}/edit", response_class=HTMLResponse)
 async def car_edit(car_id: int, request: Request, db: AsyncSession = Depends(get_db)):
-    redir = auth_check(request)
+    redir = await auth_check(request)
     if redir:
         return redir
 
@@ -190,7 +190,7 @@ async def car_edit(car_id: int, request: Request, db: AsyncSession = Depends(get
 
 @router.post("/cars/{car_id}/edit")
 async def car_update(car_id: int, request: Request, db: AsyncSession = Depends(get_db)):
-    redir = auth_check(request)
+    redir = await auth_check(request)
     if redir:
         return redir
 
@@ -232,7 +232,7 @@ async def car_update(car_id: int, request: Request, db: AsyncSession = Depends(g
 
 @router.post("/cars/{car_id}/sold")
 async def car_mark_sold(car_id: int, request: Request, db: AsyncSession = Depends(get_db)):
-    redir = auth_check(request)
+    redir = await auth_check(request)
     if redir:
         return redir
 
@@ -247,7 +247,7 @@ async def car_mark_sold(car_id: int, request: Request, db: AsyncSession = Depend
 
 @router.post("/cars/{car_id}/duplicate")
 async def car_duplicate(car_id: int, request: Request, db: AsyncSession = Depends(get_db)):
-    redir = auth_check(request)
+    redir = await auth_check(request)
     if redir:
         return redir
 
@@ -275,7 +275,7 @@ async def car_duplicate(car_id: int, request: Request, db: AsyncSession = Depend
 
 @router.post("/cars/import")
 async def cars_import(request: Request, db: AsyncSession = Depends(get_db)):
-    redir = auth_check(request)
+    redir = await auth_check(request)
     if redir:
         return redir
 
@@ -327,7 +327,7 @@ async def import_ml_url(request: Request, db: AsyncSession = Depends(get_db)):
     Parses the URL for MLA ID + brand/model from slug,
     then redirects to the car form pre-filled with data.
     """
-    redir = auth_check(request)
+    redir = await auth_check(request)
     if redir:
         return redir
 
@@ -372,7 +372,7 @@ async def import_ml_url_save(request: Request, db: AsyncSession = Depends(get_db
     """
     Save a car imported from ML URL. Receives full form data.
     """
-    redir = auth_check(request)
+    redir = await auth_check(request)
     if redir:
         return redir
 
