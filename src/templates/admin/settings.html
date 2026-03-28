@@ -54,6 +54,36 @@
         </div>
     </div>
 
+    <div class="card">
+        <h3>Subscription</h3>
+        <div class="info-list">
+            <div class="info-item">
+                <span>Status</span>
+                <strong class="{% if dealer and dealer.subscription_status in ('trial', 'active') %}text-success{% elif dealer and dealer.subscription_status == 'past_due' %}text-warning{% else %}text-muted{% endif %}">
+                    {{ dealer.subscription_status | upper if dealer and dealer.subscription_status else 'No subscription' }}
+                </strong>
+            </div>
+            {% if dealer and dealer.plan %}
+            <div class="info-item">
+                <span>Plan</span>
+                <strong>{{ dealer.plan }}</strong>
+            </div>
+            {% endif %}
+            {% if dealer and dealer.trial_ends_at %}
+            <div class="info-item">
+                <span>Trial ends</span>
+                <strong>{{ dealer.trial_ends_at.strftime('%Y-%m-%d') }}</strong>
+            </div>
+            {% endif %}
+            {% if dealer and dealer.subscription_status == 'past_due' and dealer.grace_period_ends_at %}
+            <div class="info-item">
+                <span>Grace period ends</span>
+                <strong class="text-warning">{{ dealer.grace_period_ends_at.strftime('%Y-%m-%d') }}</strong>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
     <div class="form-actions">
         <button type="submit" class="btn btn-primary btn-lg">Save settings</button>
     </div>
