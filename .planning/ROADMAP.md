@@ -212,7 +212,7 @@ Plans:
 Plans:
 - [x] 13-01-PLAN.md — Extend metrics_page(): range param, funnel queries, lead-volume-over-time data
 - [ ] 13-02-PLAN.md — Update metrics.html: funnel stat-cards, Chart.js line chart, range toggle buttons
-- [ ] 13-03-PLAN.md — CSV export: GET /leads/export-csv route + Exportar CSV button on leads.html
+- [x] 13-03-PLAN.md — CSV export: GET /leads/export-csv route + Exportar CSV button on leads.html
 **UI hint**: yes
 
 ### Phase 14: Client Onboarding

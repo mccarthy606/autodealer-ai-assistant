@@ -36,7 +36,7 @@
 - [x] **DASH-02**: Статистика: кол-во лидов, конверсия в визиты, время ответа
 - [x] **DASH-03**: Топ запрашиваемых марок/моделей
 - [x] **DASH-04**: Список всех диалогов с историей сообщений
-- [ ] **DASH-05**: Список лидов с фильтрацией по статусу
+- [x] **DASH-05**: Список лидов с фильтрацией по статусу
 
 ### Billing (Lemon Squeezy)
 - [ ] **BILL-01**: Subscription model (план → tenant → статус)
@@ -125,7 +125,7 @@
 | DASH-02 | Phase 7 | Complete |
 | DASH-03 | Phase 7 | Complete |
 | DASH-04 | Phase 7 | Complete |
-| DASH-05 | Phase 7 | Pending |
+| DASH-05 | Phase 7 | Complete |
 | BILL-01 | Phase 8 | Pending |
 | BILL-02 | Phase 8 | Pending |
 | BILL-03 | Phase 8 | Pending |
