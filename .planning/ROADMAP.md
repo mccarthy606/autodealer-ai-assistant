@@ -24,7 +24,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 10: Client Integration Setup** - Self-service UI for dealerships to connect WhatsApp Business and MercadoLibre without .env editing (completed 2026-03-28)
 - [x] **Phase 11: MercadoLibre Inventory Sync** - Pull ML listings into InventoryItems DB via API; Celery periodic sync; AI agent operates on live ML data (completed 2026-03-28)
 - [x] **Phase 12: AI Agent (LLM Integration)** - Connect Claude/GPT to conversation engine; agent answers using inventory context; rule-based fallback (completed 2026-03-28)
-- [ ] **Phase 13: Analytics Dashboard** - Conversion funnel, lead stats over time, top brands/models, CSV export
+- [x] **Phase 13: Analytics Dashboard** - Conversion funnel, lead stats over time, top brands/models, CSV export (completed 2026-03-28)
 - [ ] **Phase 14: Client Onboarding** - Guided setup wizard in Admin UI; all instructions built-in (WA Business, ML app); client provides data → system configures itself
 - [ ] **Phase 15: Test Deployment** - VPS deploy without domain (IP or free subdomain); full end-to-end test with real WhatsApp and ML
 
@@ -211,7 +211,7 @@ Plans:
 **Plans**: 3 plans
 Plans:
 - [x] 13-01-PLAN.md — Extend metrics_page(): range param, funnel queries, lead-volume-over-time data
-- [ ] 13-02-PLAN.md — Update metrics.html: funnel stat-cards, Chart.js line chart, range toggle buttons
+- [x] 13-02-PLAN.md — Update metrics.html: funnel stat-cards, Chart.js line chart, range toggle buttons
 - [x] 13-03-PLAN.md — CSV export: GET /leads/export-csv route + Exportar CSV button on leads.html
 **UI hint**: yes
 
