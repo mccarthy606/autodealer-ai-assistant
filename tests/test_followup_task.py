@@ -170,10 +170,16 @@ class TestSendFollowupsTask:
             # asyncio.run() wraps the coroutine call -- return a success response
             mock_asyncio_run.return_value = {"messages": [{"id": "wamid.abc"}]}
 
+            mock_dealer = MagicMock()
+            mock_dealer.subscription_status = "active"
+            mock_dealer.whatsapp_phone_number_id = "111"
+            mock_dealer.whatsapp_access_token = "tok"
+
             mock_session = MagicMock()
             mock_session.__enter__ = MagicMock(return_value=mock_session)
             mock_session.__exit__ = MagicMock(return_value=False)
             mock_session.query.return_value.filter.return_value.all.return_value = [conv]
+            mock_session.get.return_value = mock_dealer
             mock_session_cls.return_value = mock_session
 
             result = send_followups()
@@ -221,10 +227,16 @@ class TestSendFollowupsTask:
             mock_settings.database_url = "sqlite://"
             mock_asyncio_run.return_value = {"error": "network timeout"}
 
+            mock_dealer = MagicMock()
+            mock_dealer.subscription_status = "active"
+            mock_dealer.whatsapp_phone_number_id = "111"
+            mock_dealer.whatsapp_access_token = "tok"
+
             mock_session = MagicMock()
             mock_session.__enter__ = MagicMock(return_value=mock_session)
             mock_session.__exit__ = MagicMock(return_value=False)
             mock_session.query.return_value.filter.return_value.all.return_value = [conv]
+            mock_session.get.return_value = mock_dealer
             mock_session_cls.return_value = mock_session
 
             result = send_followups()
