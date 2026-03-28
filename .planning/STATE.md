@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Ready to plan
-stopped_at: Completed 06-02-PLAN.md
+stopped_at: Completed 06-04-PLAN.md
 last_updated: "2026-03-27T00:00:00.000Z"
 progress:
   total_phases: 9
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 ## Current Position
 
 Phase: 6
-Plan: 2 (complete)
+Plan: 4 (complete)
 
 ## Performance Metrics
 
@@ -53,6 +53,7 @@ Plan: 2 (complete)
 | Phase 05 P01 | 15min | 4 tasks | 4 files |
 | Phase 05 P02 | 12min | 3 tasks | 4 files |
 | Phase 06 P02 | 15min | 4 tasks | 6 files |
+| Phase 06 P04 | 10min | 4 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -80,6 +81,8 @@ Recent decisions affecting current work:
 - [Phase 06-02]: Silent 200 on unknown phone_number_id (Meta must never receive 4xx from webhook)
 - [Phase 06-02]: Rate limiter key namespaced to rate:wa:{dealership_id}:{phone}
 - [Phase 06-02]: ML webhook falls back to settings.default_dealership_id when no dealership found
+- [Phase 06-04]: bcrypt hashes computed at module level in conftest.py to avoid per-test CPU cost
+- [Phase 06-04]: is_authenticated test patches settings.admin_password to force real session check path
 
 ### Pending Todos
 
@@ -95,4 +98,4 @@ None yet.
 
 Last session: 2026-03-27T00:00:00.000Z
 Stopped at: Completed 06-02-PLAN.md
-Resume file: .planning/phases/06-multi-tenancy/06-02-SUMMARY.md
+Resume file: .planning/phases/06-multi-tenancy/06-04-SUMMARY.md
