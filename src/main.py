@@ -3,6 +3,7 @@
 import logging
 from pathlib import Path
 
+import sentry_sdk
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -19,6 +20,14 @@ from src.config import settings
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+if settings.sentry_dsn:
+    sentry_sdk.init(
+        dsn=settings.sentry_dsn,
+        environment="production",
+        release="1.0.0",
+        traces_sample_rate=0.1,
+    )
 
 app = FastAPI(
     title="AutoDealer AI Assistant",
@@ -58,23 +67,13 @@ if static_dir.exists():
 
 @app.on_event("startup")
 async def startup():
-    """Ensure default dealership exists and run migrations."""
-    from sqlalchemy import select, text
+    """Ensure default dealership exists."""
+    from sqlalchemy import select
     from src.db.session import AsyncSessionLocal
     from src.db.models import Dealership
 
     async with AsyncSessionLocal() as session:
         try:
-            # Run alembic migrations automatically
-            try:
-                from alembic.config import Config
-                from alembic import command
-                alembic_cfg = Config("alembic.ini")
-                command.upgrade(alembic_cfg, "head")
-                logger.info("Alembic migrations applied successfully")
-            except Exception as e:
-                logger.warning("Could not run alembic migrations: %s", e)
-
             stmt = select(Dealership).where(Dealership.id == settings.default_dealership_id)
             result = await session.execute(stmt)
             if result.scalar_one_or_none() is None:
@@ -94,7 +93,51 @@ async def startup():
 
 @app.get("/health")
 async def health():
-    return {"status": "ok"}
+    """Deep health check: DB, Redis, Celery."""
+    from sqlalchemy import text
+    from src.db.session import AsyncSessionLocal
+    from src.api.rate_limit import get_redis
+    import asyncio
+
+    result = {"db": "ok", "redis": "ok", "celery": "ok"}
+
+    # DB check
+    try:
+        async with AsyncSessionLocal() as session:
+            await session.execute(text("SELECT 1"))
+    except Exception as e:
+        logger.warning("Health check DB failed: %s", e)
+        result["db"] = "error"
+
+    # Redis check
+    try:
+        r = await get_redis()
+        if r is None:
+            result["redis"] = "error"
+        else:
+            await r.ping()
+    except Exception as e:
+        logger.warning("Health check Redis failed: %s", e)
+        result["redis"] = "error"
+
+    # Celery check (best-effort, 1s timeout — per D-21)
+    try:
+        from src.tasks.celery_app import celery_app
+        insp = celery_app.control.inspect(timeout=1)
+        loop = asyncio.get_event_loop()
+        ping_result = await loop.run_in_executor(None, insp.ping)
+        if not ping_result:
+            result["celery"] = "timeout"
+    except Exception as e:
+        logger.warning("Health check Celery failed: %s", e)
+        result["celery"] = "error"
+
+    any_error = any(v == "error" for v in result.values())
+    result["status"] = "degraded" if any_error else "ok"
+
+    status_code = 503 if any_error else 200
+    from fastapi.responses import JSONResponse
+    return JSONResponse(content=result, status_code=status_code)
 
 
 @app.get("/")
