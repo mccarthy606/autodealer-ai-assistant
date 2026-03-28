@@ -13,9 +13,10 @@ from src.api.deps import get_db
 from src.api.rate_limit import check_rate_limit
 from src.config import settings
 from src.adapters.whatsapp_cloud import (
-    WhatsAppCloudAdapter, parse_incoming_message, verify_webhook, get_dealership_by_wa
+    WhatsAppCloudAdapter, parse_incoming_message, verify_webhook,
+    verify_signature, get_dealership_by_wa,
 )
-from src.db.models import Message
+from src.db.models import Dealership, Message
 from src.services.billing import is_subscription_active
 from src.services.conversation_engine import process_message
 
@@ -58,10 +59,23 @@ async def receive_whatsapp_message(
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
     """Receive incoming WhatsApp Cloud messages — routes by phone_number_id."""
-    try:
-        payload = await request.json()
-    except Exception:
-        return {"status": "error", "message": "invalid payload"}
+    # Verify HMAC signature when app secret is configured (CRIT-01)
+    if settings.whatsapp_webhook_secret:
+        body = await request.body()
+        sig = request.headers.get("X-Hub-Signature-256", "")
+        if not verify_signature(body, sig, settings.whatsapp_webhook_secret):
+            logger.warning("WhatsApp webhook signature verification failed")
+            return {"status": "error", "message": "invalid signature"}
+        try:
+            import json
+            payload = json.loads(body)
+        except Exception:
+            return {"status": "error", "message": "invalid payload"}
+    else:
+        try:
+            payload = await request.json()
+        except Exception:
+            return {"status": "error", "message": "invalid payload"}
 
     parsed = parse_incoming_message(payload)
     if not parsed:
@@ -76,9 +90,26 @@ async def receive_whatsapp_message(
     if phone_number_id:
         dealer = await get_dealership_by_wa(db, phone_number_id)
     if dealer is None:
-        # Unknown phone_number_id — return 200 silently (per D-12, never 4xx to Meta)
-        logger.info("No dealership for phone_number_id=%s, ignoring", phone_number_id)
-        return {"status": "ok"}
+        # Fallback: use default dealership for backward compat (single-tenant .env setup)
+        # per D-12: never 4xx to Meta; per INT-04: fall back instead of silent drop
+        default_id = settings.default_dealership_id
+        if default_id:
+            stmt = select(Dealership).where(Dealership.id == default_id)
+            r = await db.execute(stmt)
+            dealer = r.scalar_one_or_none()
+            if dealer:
+                logger.info(
+                    "phone_number_id=%s not in DB, using default dealership=%d",
+                    phone_number_id,
+                    default_id,
+                )
+        if dealer is None:
+            logger.warning(
+                "No dealership for phone_number_id=%s and default_id=%s not found, dropping message",
+                phone_number_id,
+                default_id,
+            )
+            return {"status": "ok"}
 
     if not is_subscription_active(dealer):
         logger.info(
