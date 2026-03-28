@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+from datetime import datetime, UTC, timedelta
 from typing import AsyncGenerator
 
 import bcrypt
@@ -164,3 +165,109 @@ async def sample_car_no_photos(db_session: AsyncSession, dealership: Dealership)
     db_session.add(car)
     await db_session.flush()
     return car
+
+
+# ---------------------------------------------------------------------------
+# Billing fixtures (ids 10-14) — used by tests/test_billing.py
+# IDs chosen to avoid collision with existing fixtures (1, 2).
+# ---------------------------------------------------------------------------
+
+@pytest_asyncio.fixture
+async def active_dealership(db_session: AsyncSession) -> Dealership:
+    """Dealership with an active subscription."""
+    d = Dealership(
+        id=10,
+        name="Active Dealership",
+        whatsapp_phone_number_id="3333333333",
+        whatsapp_access_token="test-wa-token-10",
+        whatsapp_verify_token="test-verify-token-10",
+        admin_username="dealer_active",
+        admin_password_hash=_DEALER1_HASH,
+        subscription_status="active",
+        subscription_id="sub_active_001",
+        ls_customer_id="cust_001",
+        plan="basic",
+    )
+    db_session.add(d)
+    await db_session.flush()
+    return d
+
+
+@pytest_asyncio.fixture
+async def trial_dealership(db_session: AsyncSession) -> Dealership:
+    """Dealership on a trial subscription with trial_ends_at in the future."""
+    d = Dealership(
+        id=11,
+        name="Trial Dealership",
+        whatsapp_phone_number_id="4444444444",
+        whatsapp_access_token="test-wa-token-11",
+        whatsapp_verify_token="test-verify-token-11",
+        admin_username="dealer_trial",
+        admin_password_hash=_DEALER1_HASH,
+        subscription_status="trial",
+        subscription_id="sub_trial_001",
+        ls_customer_id="cust_002",
+        plan="basic",
+        trial_ends_at=datetime.now(UTC) + timedelta(days=5),
+    )
+    db_session.add(d)
+    await db_session.flush()
+    return d
+
+
+@pytest_asyncio.fixture
+async def past_due_in_grace_dealership(db_session: AsyncSession) -> Dealership:
+    """Dealership that is past_due but still within the 7-day grace period."""
+    d = Dealership(
+        id=12,
+        name="Past Due Grace Dealership",
+        whatsapp_phone_number_id="5555555555",
+        whatsapp_access_token="test-wa-token-12",
+        whatsapp_verify_token="test-verify-token-12",
+        admin_username="dealer_grace",
+        admin_password_hash=_DEALER1_HASH,
+        subscription_status="past_due",
+        subscription_id="sub_grace_001",
+        ls_customer_id="cust_003",
+        grace_period_ends_at=datetime.now(UTC) + timedelta(days=3),
+    )
+    db_session.add(d)
+    await db_session.flush()
+    return d
+
+
+@pytest_asyncio.fixture
+async def expired_dealership(db_session: AsyncSession) -> Dealership:
+    """Dealership with an expired subscription — service must be blocked."""
+    d = Dealership(
+        id=13,
+        name="Expired Dealership",
+        whatsapp_phone_number_id="6666666666",
+        whatsapp_access_token="test-wa-token-13",
+        whatsapp_verify_token="test-verify-token-13",
+        admin_username="dealer_expired",
+        admin_password_hash=_DEALER1_HASH,
+        subscription_status="expired",
+        subscription_id="sub_expired_001",
+        ls_customer_id="cust_004",
+    )
+    db_session.add(d)
+    await db_session.flush()
+    return d
+
+
+@pytest_asyncio.fixture
+async def no_subscription_dealership(db_session: AsyncSession) -> Dealership:
+    """Dealership with no subscription at all — all subscription fields None."""
+    d = Dealership(
+        id=14,
+        name="No Subscription Dealership",
+        whatsapp_phone_number_id="7777777777",
+        whatsapp_access_token="test-wa-token-14",
+        whatsapp_verify_token="test-verify-token-14",
+        admin_username="dealer_nosub",
+        admin_password_hash=_DEALER1_HASH,
+    )
+    db_session.add(d)
+    await db_session.flush()
+    return d
