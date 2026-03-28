@@ -1,6 +1,7 @@
 """Admin dashboard routes -- home, auth, test chat, metrics."""
 
 import logging
+from collections import defaultdict
 from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, Request
@@ -20,7 +21,7 @@ from src.api.routes.admin_common import auth_check, templates
 from src.config import settings
 from src.db.models import (
     Dealership, InventoryItem, Lead, Conversation, Event,
-    StatusEnum,
+    StatusEnum, LeadIntentEnum, LeadStatusEnum, Message, MessageDirectionEnum,
 )
 from src.services.conversation_engine import process_message
 
@@ -101,12 +102,14 @@ async def dashboard(request: Request, db: AsyncSession = Depends(get_db)):
     today = datetime.now(UTC).date()
     today_start = datetime.combine(today, datetime.min.time())
 
-    # Conversations today
+    # Active conversations (bot mode, last 7 days)
+    seven_days_ago = datetime.now(UTC) - timedelta(days=7)
     r = await db.execute(select(func.count(Conversation.id)).where(
         Conversation.dealership_id == did,
-        Conversation.last_message_at >= today_start,
+        Conversation.mode == "bot",
+        Conversation.last_message_at >= seven_days_ago,
     ))
-    convs_today = r.scalar() or 0
+    active_conversations = r.scalar() or 0
 
     # Leads today
     r = await db.execute(select(func.count(Lead.id)).where(
@@ -115,12 +118,13 @@ async def dashboard(request: Request, db: AsyncSession = Depends(get_db)):
     ))
     leads_today = r.scalar() or 0
 
-    # Pending handoffs
-    r = await db.execute(select(func.count(Conversation.id)).where(
-        Conversation.dealership_id == did,
-        Conversation.mode == "manager",
+    # Pending visits
+    r = await db.execute(select(func.count(Lead.id)).where(
+        Lead.dealership_id == did,
+        Lead.intent == LeadIntentEnum.visit,
+        Lead.status.in_([LeadStatusEnum.new, LeadStatusEnum.qualified]),
     ))
-    pending_handoffs = r.scalar() or 0
+    pending_visits = r.scalar() or 0
 
     # Top searched (from events)
     brand_col = Event.payload["brand"].astext
@@ -150,9 +154,9 @@ async def dashboard(request: Request, db: AsyncSession = Depends(get_db)):
 
     return templates.TemplateResponse("admin/dashboard.html", {
         "request": request,
-        "convs_today": convs_today,
+        "active_conversations": active_conversations,
         "leads_today": leads_today,
-        "pending_handoffs": pending_handoffs,
+        "pending_visits": pending_visits,
         "top_searches": top_searches,
         "cars_available": cars_available,
     })
@@ -267,6 +271,50 @@ async def metrics_page(request: Request, db: AsyncSession = Depends(get_db)):
     total_leads = r.scalar() or 0
     conversion = round(total_leads / total_convs * 100, 1) if total_convs else 0
 
+    # Avg bot response time (last 30 days, Python-side computation, per D-07/D-08/D-13)
+    thirty_days_ago = datetime.now(UTC) - timedelta(days=30)
+    r = await db.execute(
+        select(Conversation.id).where(Conversation.dealership_id == did)
+    )
+    conv_ids = [row[0] for row in r.all()]
+    avg_response_str = "\u2014"
+    if conv_ids:
+        r = await db.execute(
+            select(Message.conversation_id, Message.direction, Message.created_at)
+            .where(
+                Message.conversation_id.in_(conv_ids),
+                Message.created_at >= thirty_days_ago,
+            )
+            .order_by(Message.conversation_id, Message.created_at)
+        )
+        rows = r.all()
+        by_conv: dict = defaultdict(list)
+        for conv_id, direction, created_at in rows:
+            by_conv[conv_id].append((direction, created_at))
+        deltas: list = []
+        for msgs in by_conv.values():
+            i = 0
+            while i < len(msgs):
+                if msgs[i][0] == MessageDirectionEnum.inbound:
+                    j = i + 1
+                    while j < len(msgs) and msgs[j][0] != MessageDirectionEnum.outbound:
+                        j += 1
+                    if j < len(msgs):
+                        delta = (msgs[j][1] - msgs[i][1]).total_seconds()
+                        if delta >= 0:
+                            deltas.append(delta)
+                    i = j + 1
+                else:
+                    i += 1
+        if deltas:
+            avg_secs = sum(deltas) / len(deltas)
+            if avg_secs < 60:
+                avg_response_str = f"{int(avg_secs)}s"
+            else:
+                mins = int(avg_secs // 60)
+                secs = int(avg_secs % 60)
+                avg_response_str = f"{mins}m {secs}s"
+
     return templates.TemplateResponse("admin/metrics.html", {
         "request": request,
         "convs_today": convs_today,
@@ -275,4 +323,5 @@ async def metrics_page(request: Request, db: AsyncSession = Depends(get_db)):
         "top_searches": top_searches,
         "handoffs_today": handoffs_today,
         "conversion": conversion,
+        "avg_response_str": avg_response_str,
     })
