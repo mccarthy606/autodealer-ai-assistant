@@ -4,6 +4,7 @@ import asyncio
 import json
 from typing import AsyncGenerator
 
+import bcrypt
 import pytest
 import pytest_asyncio
 from sqlalchemy import create_engine, event, text, JSON
@@ -13,6 +14,10 @@ from sqlalchemy.dialects.postgresql import JSONB
 
 from src.db.session import Base
 from src.db.models import *  # noqa - import all models
+
+# Computed once at module load — bcrypt is slow per-call
+_DEALER1_HASH: str = bcrypt.hashpw(b"pass1", bcrypt.gensalt()).decode()
+_DEALER2_HASH: str = bcrypt.hashpw(b"pass2", bcrypt.gensalt()).decode()
 
 
 # Use SQLite for tests (async via aiosqlite)
@@ -54,7 +59,7 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
 
 @pytest_asyncio.fixture
 async def dealership(db_session: AsyncSession) -> Dealership:
-    """Create a test dealership."""
+    """Create a test dealership with multi-tenant fields."""
     d = Dealership(
         id=1,
         name="Test Dealership",
@@ -62,6 +67,31 @@ async def dealership(db_session: AsyncSession) -> Dealership:
         business_hours="Lun-Vie 9-18",
         timezone="America/Argentina/Buenos_Aires",
         default_language="es-AR",
+        whatsapp_phone_number_id="1111111111",
+        whatsapp_access_token="test-wa-token-1",
+        whatsapp_verify_token="test-verify-token-1",
+        ml_user_id="123456789",
+        admin_username="dealer1",
+        admin_password_hash=_DEALER1_HASH,
+    )
+    db_session.add(d)
+    await db_session.flush()
+    return d
+
+
+@pytest_asyncio.fixture
+async def dealership2(db_session: AsyncSession) -> Dealership:
+    """Second dealership for isolation tests."""
+    d = Dealership(
+        id=2,
+        name="Second Dealership",
+        address="Av. Segunda 456, CABA",
+        whatsapp_phone_number_id="2222222222",
+        whatsapp_access_token="test-wa-token-2",
+        whatsapp_verify_token="test-verify-token-2",
+        ml_user_id="987654321",
+        admin_username="dealer2",
+        admin_password_hash=_DEALER2_HASH,
     )
     db_session.add(d)
     await db_session.flush()
