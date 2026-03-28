@@ -106,6 +106,11 @@ class Dealership(Base):
     plan = Column(String(64), nullable=True)
     trial_ends_at = Column(DateTime, nullable=True)
     grace_period_ends_at = Column(DateTime, nullable=True)
+    whatsapp_webhook_secret = Column(String(128), nullable=True)
+    ml_access_token = Column(String(512), nullable=True)
+    ml_refresh_token = Column(String(512), nullable=True)
+    ml_app_id = Column(String(64), nullable=True)
+    ml_client_secret = Column(String(128), nullable=True)
 
     inventory_items = relationship("InventoryItem", back_populates="dealership")
     conversations = relationship("Conversation", back_populates="dealership")
