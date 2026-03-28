@@ -1,5 +1,6 @@
 """MercadoLibre OAuth token manager — auto-refresh, Redis-backed for multi-worker safety."""
 
+import asyncio
 import logging
 from datetime import UTC, datetime, timedelta
 from typing import Optional
@@ -82,7 +83,6 @@ async def _refresh_with_lock(redis, did: int, dealer=None) -> Optional[str]:
         acquired = await redis.set(lock_key, "1", nx=True, px=30_000)
         if not acquired:
             # Another worker is refreshing — wait and re-read
-            import asyncio
             await asyncio.sleep(2)
             token, _ = await _read_from_redis(redis, did)
             return token or None
@@ -123,7 +123,11 @@ async def _do_refresh(redis, did: int, dealer=None) -> Optional[str]:
                 },
                 headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
-            data = resp.json()
+
+        if resp.status_code != 200:
+            logger.error("ml_token_manager: refresh HTTP %s — %s", resp.status_code, resp.text[:200])
+            return None
+        data = resp.json()
 
         if "access_token" not in data:
             logger.error("ml_token_manager: refresh failed — %s", data.get("message", data))
@@ -138,7 +142,7 @@ async def _do_refresh(redis, did: int, dealer=None) -> Optional[str]:
         if redis:
             pipe = redis.pipeline()
             pipe.set(token_key, new_access, ex=expires_in)
-            pipe.set(refresh_key, new_refresh)
+            pipe.set(refresh_key, new_refresh, ex=60 * 60 * 24 * 60)  # 60-day TTL
             pipe.set(expires_key, expires_at.isoformat(), ex=expires_in)
             pipe.delete(lock_key)
             await pipe.execute()

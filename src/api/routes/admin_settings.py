@@ -53,6 +53,7 @@ async def settings_save(request: Request, db: AsyncSession = Depends(get_db)):
         dealer.business_hours = (form.get("business_hours") or "").strip() or None
         dealer.name = (form.get("name") or dealer.name).strip()
         dealer.default_language = (form.get("default_language") or "es-AR").strip()
+        await db.commit()
 
     return RedirectResponse(url="/admin/ui/settings?saved=1", status_code=302)
 
@@ -76,9 +77,10 @@ async def integrations_page(request: Request, db: AsyncSession = Depends(get_db)
         (dealer and dealer.ml_access_token) or settings.ml_access_token
     )
 
-    stmt2 = select(InventoryItem).where(
-        InventoryItem.dealership_id == did,
-        InventoryItem.ml_item_id.isnot(None),
+    stmt2 = (
+        select(InventoryItem)
+        .where(InventoryItem.dealership_id == did, InventoryItem.ml_item_id.isnot(None))
+        .limit(200)
     )
     r2 = await db.execute(stmt2)
     ml_cars = r2.scalars().all()
@@ -169,7 +171,8 @@ async def test_connection(request: Request, db: AsyncSession = Depends(get_db)):
                 return {"ok": True, "detail": f"Conectado: {name}"}
             error = data.get("error", {}).get("message", f"HTTP {resp.status_code}")
             return {"ok": False, "detail": f"Error de Meta: {error}"}
-        except Exception:
+        except Exception as e:
+            logger.warning("test_connection whatsapp error: %s", e)
             return {"ok": False, "detail": "Error de red — verificar conexion a internet"}
 
     if service == "mercadolibre":
@@ -187,7 +190,8 @@ async def test_connection(request: Request, db: AsyncSession = Depends(get_db)):
                 nickname = data.get("nickname") or str(data.get("id", ""))
                 return {"ok": True, "detail": f"Conectado como: {nickname}"}
             return {"ok": False, "detail": "Token invalido — refrescar token ML"}
-        except Exception:
+        except Exception as e:
+            logger.warning("test_connection mercadolibre error: %s", e)
             return {"ok": False, "detail": "Error de red — verificar conexion a internet"}
 
     return {"ok": False, "detail": "Servicio desconocido"}
