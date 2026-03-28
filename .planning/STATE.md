@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Ready to plan
-stopped_at: Completed 06-04-PLAN.md
+stopped_at: Completed 08-01-PLAN.md
 last_updated: "2026-03-27T00:00:00.000Z"
 progress:
   total_phases: 9
-  completed_phases: 5
+  completed_phases: 7
   total_plans: 9
   completed_plans: 9
 ---
@@ -23,8 +23,8 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 
 ## Current Position
 
-Phase: 6
-Plan: 4 (complete)
+Phase: 8
+Plan: 1 (complete)
 
 ## Performance Metrics
 
@@ -54,6 +54,7 @@ Plan: 4 (complete)
 | Phase 05 P02 | 12min | 3 tasks | 4 files |
 | Phase 06 P02 | 15min | 4 tasks | 6 files |
 | Phase 06 P04 | 10min | 4 tasks | 3 files |
+| Phase 08 P01 | 5min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -83,6 +84,10 @@ Recent decisions affecting current work:
 - [Phase 06-02]: ML webhook falls back to settings.default_dealership_id when no dealership found
 - [Phase 06-04]: bcrypt hashes computed at module level in conftest.py to avoid per-test CPU cost
 - [Phase 06-04]: is_authenticated test patches settings.admin_password to force real session check path
+- [Phase 08-01]: migration chain 004→006→007 (no 005); down_revision="006"
+- [Phase 08-01]: LS status paused/unpaid both map to past_due; unknown LS status defaults to expired
+- [Phase 08-01]: status=None + future trial_ends_at = active (D-19 pre-subscription trial exception)
+- [Phase 08-01]: Naive datetime normalization via .replace(tzinfo=UTC) before any datetime comparison
 
 ### Pending Todos
 
@@ -97,5 +102,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-27T00:00:00.000Z
-Stopped at: Completed 06-02-PLAN.md
-Resume file: .planning/phases/06-multi-tenancy/06-04-SUMMARY.md
+Stopped at: Completed 08-01-PLAN.md
+Resume file: .planning/phases/08-billing/08-01-SUMMARY.md
