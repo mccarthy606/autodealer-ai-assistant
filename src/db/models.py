@@ -100,6 +100,12 @@ class Dealership(Base):
     admin_username = Column(String(128), nullable=True)
     admin_password_hash = Column(String(255), nullable=True)
     created_at = Column(DateTime, default=_utcnow)
+    subscription_status = Column(String(32), nullable=True)
+    subscription_id = Column(String(128), nullable=True)
+    ls_customer_id = Column(String(128), nullable=True)
+    plan = Column(String(64), nullable=True)
+    trial_ends_at = Column(DateTime, nullable=True)
+    grace_period_ends_at = Column(DateTime, nullable=True)
 
     inventory_items = relationship("InventoryItem", back_populates="dealership")
     conversations = relationship("Conversation", back_populates="dealership")
