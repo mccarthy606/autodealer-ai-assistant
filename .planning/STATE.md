@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Executing Phase 04
-stopped_at: Completed 04-01-PLAN.md
+status: Ready to plan
+stopped_at: Completed Phase 5 Plan 01
 last_updated: "2026-03-27T23:00:00.000Z"
 progress:
   total_phases: 9
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 9
-  completed_plans: 8
+  completed_plans: 9
 ---
 
 # Project State
@@ -23,8 +23,8 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 
 ## Current Position
 
-Phase: 04 (outbound-flow) — EXECUTING
-Plan: 2 of 2
+Phase: 5
+Plan: 1 (complete)
 
 ## Performance Metrics
 
@@ -50,6 +50,7 @@ Plan: 2 of 2
 | Phase 02 P01 | 4min | 2 tasks | 7 files |
 | Phase 03 P01 | 8min | 1 tasks | 3 files |
 | Phase 04 P01 | 2min | 2 tasks | 4 files |
+| Phase 05 P01 | 15min | 4 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -70,6 +71,9 @@ Recent decisions affecting current work:
 - [Phase 03]: Manager mode must explicitly set result.language from saved state
 - [Phase 04]: Lazy import of phone_utils inside get_buyer_contact to avoid circular imports
 - [Phase 04]: Phone normalizer builds 549+area+number format (WhatsApp E.164 for Argentina)
+- [Phase 05]: OPT_OUT uses bare-no regex + keyword list; "no quiero" excluded (ambiguous shopping phrase)
+- [Phase 05]: asyncio.run() used to call async send_template() from sync Celery worker
+- [Phase 05]: 48h minimum gap enforced between followup #1 and followup #2 via last_followup_at
 
 ### Pending Todos
 
@@ -84,5 +88,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-27T23:00:00.000Z
-Stopped at: Completed 04-01-PLAN.md
-Resume file: .planning/phases/04-outbound-flow/04-01-SUMMARY.md
+Stopped at: Completed 05-01-PLAN.md
+Resume file: .planning/phases/05-follow-up-automation/05-01-SUMMARY.md
