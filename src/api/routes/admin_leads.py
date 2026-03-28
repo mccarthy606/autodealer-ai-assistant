@@ -1,9 +1,11 @@
 """Admin lead listing routes."""
 
+import csv
+import io
 import logging
 
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -47,3 +49,46 @@ async def leads_page(request: Request, db: AsyncSession = Depends(get_db)):
         "leads": leads,
         "filters": {"intent": intent_filter, "status": status_filter, "source": source_filter},
     })
+
+
+@router.get("/leads/export-csv")
+async def export_leads_csv(request: Request, db: AsyncSession = Depends(get_db)):
+    did = await auth_check(request)
+    if not isinstance(did, int):
+        return did
+
+    stmt = (
+        select(Lead)
+        .where(Lead.dealership_id == did)
+        .order_by(Lead.created_at.desc())
+    )
+    result = await db.execute(stmt)
+    leads = result.scalars().all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "id", "name", "phone", "intent", "status",
+        "preferred_brand", "preferred_model",
+        "budget_min", "budget_max", "notes", "created_at",
+    ])
+    for lead in leads:
+        writer.writerow([
+            lead.id,
+            lead.name or "",
+            lead.phone,
+            lead.intent.value if lead.intent else "",
+            lead.status.value if lead.status else "",
+            lead.preferred_brand or "",
+            lead.preferred_model or "",
+            str(lead.budget_min) if lead.budget_min is not None else "",
+            str(lead.budget_max) if lead.budget_max is not None else "",
+            lead.notes or "",
+            lead.created_at.isoformat() if lead.created_at else "",
+        ])
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=leads.csv"},
+    )
