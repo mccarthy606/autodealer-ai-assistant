@@ -116,6 +116,9 @@ class Dealership(Base):
     ml_last_sync_added = Column(Integer, nullable=True)
     ml_last_sync_updated = Column(Integer, nullable=True)
     ml_last_sync_sold = Column(Integer, nullable=True)
+    llm_api_key = Column(EncryptedStr(768), nullable=True)
+    llm_model = Column(String(64), nullable=True)
+    llm_enabled = Column(Boolean, nullable=True)
 
     inventory_items = relationship("InventoryItem", back_populates="dealership")
     conversations = relationship("Conversation", back_populates="dealership")
