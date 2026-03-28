@@ -112,6 +112,10 @@ class Dealership(Base):
     ml_refresh_token = Column(EncryptedStr(768), nullable=True)
     ml_app_id = Column(String(64), nullable=True)
     ml_client_secret = Column(EncryptedStr(256), nullable=True)
+    ml_last_sync_at = Column(DateTime, nullable=True)
+    ml_last_sync_added = Column(Integer, nullable=True)
+    ml_last_sync_updated = Column(Integer, nullable=True)
+    ml_last_sync_sold = Column(Integer, nullable=True)
 
     inventory_items = relationship("InventoryItem", back_populates="dealership")
     conversations = relationship("Conversation", back_populates="dealership")

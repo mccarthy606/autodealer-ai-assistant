@@ -74,6 +74,53 @@ class MercadoLibreAdapter(ChannelAdapter):
             logger.error("ML sync error: %s", e)
             return []
 
+    async def sync_all_listings(self, dealership_id: int, dealer) -> list[dict]:
+        """
+        Fetch ALL active listings from MercadoLibre using full offset pagination.
+        Overrides self.user_id and self.token from dealer row for per-dealer support.
+        Returns list of parsed item dicts.
+        """
+        from src.services.ml_token_manager import get_valid_token
+        self.token = await get_valid_token(dealership_id=dealership_id, dealer=dealer)
+        self.user_id = getattr(dealer, "ml_user_id", None) or self.user_id
+        self.is_configured = bool(self.token and self.user_id)
+
+        if not self.is_configured:
+            logger.info("[ML] sync_all_listings: dealer %s not configured — skipping", dealership_id)
+            return []
+
+        all_item_ids: list[str] = []
+        limit = 50
+        offset = 0
+
+        try:
+            async with httpx.AsyncClient(timeout=30) as client:
+                while True:
+                    url = (
+                        f"{ML_API_URL}/users/{self.user_id}/items/search"
+                        f"?status=active&limit={limit}&offset={offset}"
+                    )
+                    resp = await client.get(url, headers=self._headers())
+                    data = resp.json()
+                    page_ids = data.get("results", [])
+                    if not page_ids:
+                        break
+                    all_item_ids.extend(page_ids)
+                    paging = data.get("paging", {})
+                    total = paging.get("total", 0)
+                    offset += len(page_ids)
+                    if offset >= total:
+                        break
+
+                logger.info(
+                    "[ML] sync_all_listings: dealer=%s fetched %d item IDs",
+                    dealership_id, len(all_item_ids),
+                )
+                return await self._fetch_items_details(client, all_item_ids)
+        except Exception as e:
+            logger.error("[ML] sync_all_listings error dealer=%s: %s", dealership_id, e)
+            return []
+
     async def get_questions(self, status: str = "UNANSWERED") -> list[dict]:
         """Fetch unanswered questions."""
         await self._ensure_token()
@@ -197,7 +244,7 @@ async def fetch_seller_items_public(nickname: str) -> list[dict]:
                     url = f"https://listado.mercadolibre.com.ar/pagina/{nickname.lower()}/vehiculos/_Desde_{(page-1)*48+1}"
 
                 resp = await client.get(url, headers={
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
                 })
                 if resp.status_code != 200:
                     break
