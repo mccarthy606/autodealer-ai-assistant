@@ -16,7 +16,12 @@ from src.db.models import (
     Conversation, Dealership, Message, MessageDirectionEnum,
     Event, InventoryItem,
 )
-from src.services.intent import detect_intent, SEARCH_CAR, ASK_PHOTOS, ASK_DETAILS, ASK_PRICE, ASK_KM, ASK_STATUS, VISIT, FINANCING, TRADE_IN, NOTIFY, HUMAN, GREETING, OTHER
+from src.services.intent import (
+    detect_intent,
+    SEARCH_CAR, ASK_PHOTOS, ASK_DETAILS, ASK_PRICE, ASK_KM, ASK_STATUS,
+    VISIT, FINANCING, TRADE_IN, NOTIFY, HUMAN, GREETING, OTHER,
+    OPT_OUT,
+)
 from src.services.entities import extract_all, detect_language
 from src.services.handoff_rules import check_handoff, REASON_VISIT_SCHEDULING, REASON_PHOTOS_MISSING
 from src.services.inventory import InventoryService
@@ -110,6 +115,16 @@ async def process_message(
         conv.last_message_at = datetime.now(UTC)
         return result
 
+    # Skip opted-out conversations — silently ignore, return empty response
+    if state.get("opted_out"):
+        result.text = ""
+        result.intent = OPT_OUT
+        result.mode = conv.mode
+        result.stage = state.get("stage", "NEW")
+        result.language = state.get("language", "es")
+        result.state = state
+        return result
+
     # 5. Detect language + save
     lang = state.get("language")
     detected_lang = detect_language(text)
@@ -161,6 +176,34 @@ async def process_message(
         state["stage"] = "PRESENTING"
         stage = "PRESENTING"
         logger.info("Outbound conversation activated: conv=%s", conv.id)
+
+    # --- OPT_OUT (per D-10, D-11, D-12) ---
+    if intent == OPT_OUT:
+        state = {**state, "opted_out": True}
+        conv.last_message_at = datetime.now(UTC)
+
+        lang = state.get("language", "es")
+        if lang.startswith("es"):
+            result.text = "Entendido, no te vamos a molestar más. Si cambiás de opinión, escribinos!"
+        else:
+            result.text = "Understood, we won't bother you again. Feel free to write us if you change your mind!"
+
+        result.intent = OPT_OUT
+        result.mode = conv.mode
+        result.stage = state.get("stage", "NEW")
+        result.language = lang
+        result.state = state
+
+        session.add(Event(
+            dealership_id=dealership_id,
+            type="opt_out",
+            payload={"phone": phone},
+            conversation_id=conv.id,
+        ))
+        # Save state BEFORE returning — use JSONB-safe assignment (single write, no double-assign)
+        conv.state = {**dict(conv.state or {}), "opted_out": True}
+        await session.flush()
+        return result
 
     # --- GREETING ---
     if intent == GREETING and stage == "NEW":

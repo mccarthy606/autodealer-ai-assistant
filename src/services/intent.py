@@ -17,6 +17,7 @@ NOTIFY = "NOTIFY"
 HUMAN = "HUMAN"
 GREETING = "GREETING"
 OTHER = "OTHER"
+OPT_OUT = "OPT_OUT"
 
 # --- Keyword maps (ES + EN) ---
 _PHOTO_KEYWORDS = [
@@ -92,6 +93,15 @@ _GREETING_KEYWORDS = [
     "good afternoon", "good evening",
 ]
 
+_OPT_OUT_KEYWORDS = [
+    "no me interesa", "no gracias", "no, gracias",
+    "dejá de escribir", "deja de escribir", "dejame de escribir",
+    "no estoy interesado", "no estoy interesada",
+    "not interested", "stop", "unsubscribe", "leave me alone",
+    "don't contact me", "do not contact",
+]
+_OPT_OUT_BARE_NO = re.compile(r'^\s*no[\s!.?]*$')
+
 _SEARCH_KEYWORDS = [
     "busco", "quiero", "necesito", "tienen", "tenés",
     "looking for", "i want", "i need", "do you have",
@@ -104,6 +114,10 @@ def detect_intent(text: str, state: dict | None = None) -> str:
     t = text.lower().strip()
     state = state or {}
     stage = state.get("stage", "NEW")
+
+    # OPT_OUT — highest priority (before human)
+    if _OPT_OUT_BARE_NO.match(t) or any(k in t for k in _OPT_OUT_KEYWORDS):
+        return OPT_OUT
 
     # Priority order matters: human first, then specific, then search
 

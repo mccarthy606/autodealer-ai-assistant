@@ -8,7 +8,7 @@ celery_app = Celery(
     "ai_inventory_assistant",
     broker=settings.redis_url,
     backend=settings.redis_url,
-    include=["src.tasks.import_tasks"],
+    include=["src.tasks.import_tasks", "src.tasks.followup_task"],
 )
 celery_app.conf.update(
     task_serializer="json",
@@ -16,4 +16,12 @@ celery_app.conf.update(
     result_serializer="json",
     timezone="America/Argentina/Buenos_Aires",
     enable_utc=True,
+    beat_schedule={
+        "followup-every-15-min": {
+            "task": "src.tasks.followup_task.send_followups",
+            # Note: the task function is named send_followups (not scan_and_send_followups —
+            # the research doc used a provisional name; the implementation uses send_followups)
+            "schedule": 900,  # 15 minutes in seconds (per D-01)
+        },
+    },
 )
