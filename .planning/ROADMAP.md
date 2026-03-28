@@ -80,7 +80,7 @@ Plans:
 **Plans**: 2 plans
 Plans:
 - [x] 04-01-PLAN.md — Adapter extensions: send_template(), get_buyer_contact(), phone normalizer, ml_item_id index
-- [ ] 04-02-PLAN.md — Outbound service pipeline + OUTBOUND_INIT engine state + webhook wiring + tests
+- [x] 04-02-PLAN.md — Outbound service pipeline + OUTBOUND_INIT engine state + webhook wiring + tests
 
 ### Phase 5: Follow-Up Automation
 **Goal**: Unresponsive leads receive automated, compliant follow-up messages that respect boundaries
@@ -140,7 +140,11 @@ Plans:
   4. PostgreSQL is backed up daily via pg_dump with retention policy
   5. Health check endpoint at /health returns status of DB, Redis, and Celery connections
   6. Database migrations run via Alembic as a separate step before app startup
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [x] 09-01-PLAN.md — Infra files: docker-compose.prod.yml, Caddyfile, Makefile, scripts/backup.sh, .env.prod.example
+- [x] 09-02-PLAN.md — Code changes: Sentry init (config.py + pyproject.toml + main.py), deep /health, remove alembic from startup()
+- [ ] 09-03-PLAN.md — Tests: 4 automated tests for /health endpoint (all-ok, db-error, redis-error, celery-timeout)
 
 ## Progress
 
@@ -157,4 +161,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9
 | 6. Multi-Tenancy | 0/? | Not started | - |
 | 7. Admin Dashboard & Analytics | 0/? | Not started | - |
 | 8. Billing | 0/? | Not started | - |
-| 9. Production Deployment | 0/? | Not started | - |
+| 9. Production Deployment | 0/3 | Planning complete | - |

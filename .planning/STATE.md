@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Ready to plan
-stopped_at: Completed 09-01-PLAN.md
+stopped_at: Completed 09-02-PLAN.md
 last_updated: "2026-03-27T00:00:00.000Z"
 progress:
   total_phases: 9
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 ## Current Position
 
 Phase: 9
-Plan: 1 (complete)
+Plan: 2 (complete)
 
 ## Performance Metrics
 
@@ -57,6 +57,7 @@ Plan: 1 (complete)
 | Phase 08 P01 | 5min | 3 tasks | 3 files |
 | Phase 08 P04 | 15min | 2 tasks | 3 files |
 | Phase 09 P01 | 15min | 2 tasks | 5 files |
+| Phase 09 P02 | 8min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -94,6 +95,9 @@ Recent decisions affecting current work:
 - [Phase 09-01]: migrate is one-shot service (restart: no) with service_completed_successfully dependency
 - [Phase 09-01]: backup.sh runs on host via docker exec, PGPASSWORD env var, 7-day retention
 - [Phase 09-01]: FOLLOWUPS_ENABLED=false in .env.prod.example; beat always declared, checked inside task code
+- [Phase 09-02]: Sentry init at module level before app = FastAPI(); conditional on non-empty sentry_dsn
+- [Phase 09-02]: Celery timeout in /health maps to "timeout" (not "error") — HTTP 200 to keep load balancers happy
+- [Phase 09-02]: Alembic removed from startup(); default dealership creation logic preserved
 
 ### Pending Todos
 
@@ -108,5 +112,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-27T00:00:00.000Z
-Stopped at: Completed 09-01-PLAN.md
-Resume file: .planning/phases/09-production-deployment/09-01-SUMMARY.md
+Stopped at: Completed 09-02-PLAN.md
+Resume file: .planning/phases/09-production-deployment/09-02-SUMMARY.md
