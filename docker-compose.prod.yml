@@ -1,0 +1,94 @@
+# Production Docker Compose — AutoDealer AI Assistant
+# Usage: docker compose -f docker-compose.prod.yml up -d
+# See Makefile for convenience targets: make deploy, make migrate, make logs, etc.
+# NOTE: This file is independent of docker-compose.yml (dev). Do NOT combine them.
+
+services:
+
+  # --- One-shot migration service (runs before api starts) ---
+  migrate:
+    build: .
+    command: alembic upgrade head
+    restart: "no"
+    env_file:
+      - .env.prod
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # --- Application services ---
+  api:
+    build: .
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --workers 4
+    env_file:
+      - .env.prod
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_started
+    # NOTE: no ports: section — Caddy is the only public entrypoint
+
+  worker:
+    build: .
+    command: celery -A src.tasks.celery_app worker --loglevel=info
+    env_file:
+      - .env.prod
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  beat:
+    build: .
+    command: celery -A src.tasks.celery_app beat --loglevel=info
+    env_file:
+      - .env.prod
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  # --- Infrastructure services ---
+  postgres:
+    image: postgres:16-alpine
+    env_file:
+      - .env.prod
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - pg_backups:/backups
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    # NOTE: no host port exposure for postgres in prod
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    # NOTE: no host port exposure for redis in prod
+
+  # --- Reverse proxy / TLS termination (sole public entrypoint) ---
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
+  redis_data:
+  pg_backups:
+  caddy_data:
+  caddy_config:
