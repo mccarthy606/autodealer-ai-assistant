@@ -63,6 +63,7 @@ Plan: Not started
 | Phase 10 P03 | 5min | 1 tasks | 1 files |
 | Phase 10 P02 | 8min | 2 tasks | 2 files |
 | Phase 11 P01 | 5min | 3 tasks | 3 files |
+| Phase 11 P02 | 5min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -109,6 +110,8 @@ Recent decisions affecting current work:
 - [Phase 10-01]: All 5 new credential columns are nullable=True — dealers configure post-onboarding, system works in unconfigured state
 - [Phase 10]: [Phase 10-03]: settings.default_dealership_id fallback in WA webhook; logger.warning on double-miss; Dealership added to model import
 - [Phase 11-01]: Lazy import of get_valid_token inside sync_all_listings() matches existing _ensure_token() pattern; pagination exits on empty results OR offset >= total
+- [Phase 11-02]: asyncio.run() used to call async sync_all_listings() from sync Celery worker (same pattern as Phase 05)
+- [Phase 11-02]: Sold-item marking filtered to source=="mercadolibre" only — prevents touching sheet/manual inventory rows
 
 ### Pending Todos
 
@@ -122,6 +125,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-28T18:30:00.000Z
-Stopped at: Completed 11-01-PLAN.md
+Last session: 2026-03-28T19:00:00.000Z
+Stopped at: Completed 11-02-PLAN.md
 Resume file: None
