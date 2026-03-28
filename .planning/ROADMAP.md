@@ -159,7 +159,7 @@ Plans:
   5. ML token manager uses per-dealership Redis keys (ml:{did}:access_token etc.)
 **Plans**: 4 plans
 Plans:
-- [ ] 10-01-PLAN.md — Migration 008 + Dealership model: add 5 credential columns (whatsapp_webhook_secret, ml_access_token, ml_refresh_token, ml_app_id, ml_client_secret)
+- [x] 10-01-PLAN.md — Migration 008 + Dealership model: add 5 credential columns (whatsapp_webhook_secret, ml_access_token, ml_refresh_token, ml_app_id, ml_client_secret)
 - [ ] 10-02-PLAN.md — ml_token_manager.py per-dealer key refactor + MercadoLibreAdapter._ensure_token() update
 - [ ] 10-03-PLAN.md — webhook_cloud.py: default dealership fallback when phone_number_id not in DB
 - [ ] 10-04-PLAN.md — Admin integrations page redesign: Spanish credential forms + save route + test-connection endpoint
@@ -180,4 +180,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 7. Admin Dashboard & Analytics | 0/? | Not started | - |
 | 8. Billing | 0/? | Not started | - |
 | 9. Production Deployment | 0/3 | Planning complete | - |
-| 10. Client Integration Setup | 0/4 | Planning complete | - |
+| 10. Client Integration Setup | 1/4 | Executing | - |

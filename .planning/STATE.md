@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Ready to plan
-stopped_at: Completed 09-03-PLAN.md
-last_updated: "2026-03-28T03:30:00.000Z"
+status: Executing Phase 10
+stopped_at: Completed 10-01-PLAN.md
+last_updated: "2026-03-28T15:30:00.000Z"
 progress:
-  total_phases: 9
+  total_phases: 10
   completed_phases: 9
-  total_plans: 10
-  completed_plans: 10
+  total_plans: 27
+  completed_plans: 24
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** Bot catches ML leads, writes customer on WhatsApp first, closes on dealership visit.
-**Current focus:** Phase 06 — multi-tenancy
+**Current focus:** Phase 10 — client-integration-setup
 
 ## Current Position
 
-Phase: 9
-Plan: 3 (complete)
+Phase: 10 (client-integration-setup) — EXECUTING
+Plan: 2 of 4
 
 ## Performance Metrics
 
@@ -59,6 +59,7 @@ Plan: 3 (complete)
 | Phase 09 P01 | 15min | 2 tasks | 5 files |
 | Phase 09 P02 | 8min | 2 tasks | 3 files |
 | Phase 09 P03 | 8min | 1 tasks | 1 files |
+| Phase 10 P01 | 8min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -101,6 +102,8 @@ Recent decisions affecting current work:
 - [Phase 09-02]: Alembic removed from startup(); default dealership creation logic preserved
 - [Phase 09-03]: Patch at source module (src.db.session, src.api.rate_limit, src.tasks.celery_app) — local imports in health() body mean src.main.* patches would be no-ops
 - [Phase 09-03]: MagicMock (not AsyncMock) wraps async context manager to avoid coroutine-of-coroutine issue with __aenter__
+- [Phase 10-01]: Migration 008 adds exactly 5 columns (not whatsapp_access_token — already in 006): whatsapp_webhook_secret, ml_access_token, ml_refresh_token, ml_app_id, ml_client_secret
+- [Phase 10-01]: All 5 new credential columns are nullable=True — dealers configure post-onboarding, system works in unconfigured state
 
 ### Pending Todos
 
@@ -114,6 +117,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-28T03:30:00.000Z
-Stopped at: Completed 09-03-PLAN.md
-Resume file: .planning/phases/09-production-deployment/09-03-SUMMARY.md
+Last session: 2026-03-28T15:30:00.000Z
+Stopped at: Completed 10-01-PLAN.md
+Resume file: .planning/phases/10-client-integration-setup/10-01-SUMMARY.md
