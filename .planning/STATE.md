@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Ready to plan
-stopped_at: Completed Phase 5 Plan 02
-last_updated: "2026-03-27T23:12:00.000Z"
+stopped_at: Completed 06-02-PLAN.md
+last_updated: "2026-03-27T00:00:00.000Z"
 progress:
   total_phases: 9
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 9
   completed_plans: 9
 ---
@@ -19,11 +19,11 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** Bot catches ML leads, writes customer on WhatsApp first, closes on dealership visit.
-**Current focus:** Phase 04 — outbound-flow
+**Current focus:** Phase 06 — multi-tenancy
 
 ## Current Position
 
-Phase: 5
+Phase: 6
 Plan: 2 (complete)
 
 ## Performance Metrics
@@ -52,6 +52,7 @@ Plan: 2 (complete)
 | Phase 04 P01 | 2min | 2 tasks | 4 files |
 | Phase 05 P01 | 15min | 4 tasks | 4 files |
 | Phase 05 P02 | 12min | 3 tasks | 4 files |
+| Phase 06 P02 | 15min | 4 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -75,6 +76,10 @@ Recent decisions affecting current work:
 - [Phase 05]: OPT_OUT uses bare-no regex + keyword list; "no quiero" excluded (ambiguous shopping phrase)
 - [Phase 05]: asyncio.run() used to call async send_template() from sync Celery worker
 - [Phase 05]: 48h minimum gap enforced between followup #1 and followup #2 via last_followup_at
+- [Phase 06-02]: WhatsAppCloudAdapter is fully backward-compatible; no-arg construction still works
+- [Phase 06-02]: Silent 200 on unknown phone_number_id (Meta must never receive 4xx from webhook)
+- [Phase 06-02]: Rate limiter key namespaced to rate:wa:{dealership_id}:{phone}
+- [Phase 06-02]: ML webhook falls back to settings.default_dealership_id when no dealership found
 
 ### Pending Todos
 
@@ -88,6 +93,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-27T23:00:00.000Z
-Stopped at: Completed 05-02-PLAN.md
-Resume file: .planning/phases/05-follow-up-automation/05-02-SUMMARY.md
+Last session: 2026-03-27T00:00:00.000Z
+Stopped at: Completed 06-02-PLAN.md
+Resume file: .planning/phases/06-multi-tenancy/06-02-SUMMARY.md
