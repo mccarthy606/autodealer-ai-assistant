@@ -199,17 +199,29 @@ async def test_chat_send(request: Request, db: AsyncSession = Depends(get_db)):
     except Exception as e:
         logger.exception("Test chat error: %s", e)
         await db.rollback()
-        return {"error": str(e), "text": f"Error: {e}", "intent": "ERROR", "mode": "bot",
-                "stage": "ERROR", "matched_cars": [], "photo_urls": [], "state": {}}
+        return {"error": "internal_error", "text": "Error processing message", "intent": "ERROR",
+                "mode": "bot", "stage": "ERROR", "matched_cars": [], "photo_urls": [], "state": {}}
 
 
 # === Metrics ===
+
+def _pct(num: int, denom: int) -> str:
+    if denom == 0:
+        return "—"
+    return f"{round(num / denom * 100)}%"
+
 
 @router.get("/metrics", response_class=HTMLResponse)
 async def metrics_page(request: Request, db: AsyncSession = Depends(get_db)):
     did = await auth_check(request)
     if not isinstance(did, int):
         return did
+
+    range_days = int(request.query_params.get("range", "7"))
+    if range_days not in (7, 30, 90):
+        range_days = 7
+    range_start = datetime.now(UTC) - timedelta(days=range_days)
+
     today = datetime.now(UTC).date()
     today_start = datetime.combine(today, datetime.min.time())
 
@@ -247,7 +259,7 @@ async def metrics_page(request: Request, db: AsyncSession = Depends(get_db)):
             ).where(
                 Event.dealership_id == did,
                 Event.type == "search_performed",
-                Event.created_at >= today_start - timedelta(days=7),
+                Event.created_at >= range_start,
             ).group_by(model_col, brand_col)
             .order_by(func.count(Event.id).desc())
             .limit(10)
@@ -315,6 +327,62 @@ async def metrics_page(request: Request, db: AsyncSession = Depends(get_db)):
                 secs = int(avg_secs % 60)
                 avg_response_str = f"{mins}m {secs}s"
 
+    # Conversion funnel (all-time)
+    r = await db.execute(select(func.count(Conversation.id)).where(
+        Conversation.dealership_id == did
+    ))
+    funnel_convs = r.scalar() or 0
+
+    r = await db.execute(select(func.count(Lead.id)).where(
+        Lead.dealership_id == did
+    ))
+    funnel_leads = r.scalar() or 0
+
+    r = await db.execute(select(func.count(Lead.id)).where(
+        Lead.dealership_id == did,
+        Lead.intent == LeadIntentEnum.visit,
+    ))
+    funnel_visits = r.scalar() or 0
+
+    r = await db.execute(select(func.count(Lead.id)).where(
+        Lead.dealership_id == did,
+        Lead.status == LeadStatusEnum.closed,
+    ))
+    funnel_closed = r.scalar() or 0
+
+    funnel = {
+        "convs": funnel_convs,
+        "leads": funnel_leads,
+        "visits": funnel_visits,
+        "closed": funnel_closed,
+        "pct_leads": _pct(funnel_leads, funnel_convs),
+        "pct_visits": _pct(funnel_visits, funnel_leads),
+        "pct_closed": _pct(funnel_closed, funnel_visits),
+    }
+
+    # Lead volume over time (D-06): group by date, fill gaps with 0
+    r = await db.execute(
+        select(
+            func.date(Lead.created_at).label("day"),
+            func.count(Lead.id).label("cnt"),
+        )
+        .where(
+            Lead.dealership_id == did,
+            Lead.created_at >= range_start,
+        )
+        .group_by(func.date(Lead.created_at))
+        .order_by(func.date(Lead.created_at))
+    )
+    day_counts = {str(row.day): row.cnt for row in r.all()}
+
+    # Fill missing dates with 0
+    all_days = [
+        (datetime.now(UTC) - timedelta(days=i)).date()
+        for i in range(range_days - 1, -1, -1)
+    ]
+    chart_labels = [str(d) for d in all_days]
+    chart_data = [day_counts.get(str(d), 0) for d in all_days]
+
     return templates.TemplateResponse("admin/metrics.html", {
         "request": request,
         "convs_today": convs_today,
@@ -324,4 +392,9 @@ async def metrics_page(request: Request, db: AsyncSession = Depends(get_db)):
         "handoffs_today": handoffs_today,
         "conversion": conversion,
         "avg_response_str": avg_response_str,
+        # New in Phase 13:
+        "range_days": range_days,
+        "funnel": funnel,
+        "chart_labels": chart_labels,
+        "chart_data": chart_data,
     })
