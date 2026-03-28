@@ -5,6 +5,7 @@
     <h1>Metrics</h1>
 </div>
 
+<!-- Existing daily stats (unchanged) -->
 <div class="stats-grid">
     <div class="stat-card">
         <div class="stat-number">{{ convs_today }}</div>
@@ -28,6 +29,48 @@
     </div>
 </div>
 
+<!-- Conversion funnel (all-time) — D-03 -->
+<div class="card" style="margin-top: 1.5rem;">
+    <h3 style="margin-bottom: 1rem;">Conversion funnel (all time)</h3>
+    <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr);">
+        <div class="stat-card">
+            <div class="stat-number">{{ funnel.convs }}</div>
+            <div class="stat-label">Conversations</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ funnel.leads }}</div>
+            <div class="stat-label">Leads<br><small style="color:#6b7280">{{ funnel.pct_leads }} &rarr;</small></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ funnel.visits }}</div>
+            <div class="stat-label">Visits scheduled<br><small style="color:#6b7280">{{ funnel.pct_visits }} &rarr;</small></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ funnel.closed }}</div>
+            <div class="stat-label">Closed<br><small style="color:#6b7280">{{ funnel.pct_closed }} &rarr;</small></div>
+        </div>
+    </div>
+</div>
+
+<!-- Lead volume over time — D-01, D-02 -->
+<div class="card" style="margin-top: 1.5rem;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+        <h3 style="margin:0;">Leads over time</h3>
+        <div>
+            <a href="?range=7"
+               class="btn {% if range_days == 7 %}btn-primary{% else %}btn-secondary{% endif %}"
+               style="margin-right:4px;">7d</a>
+            <a href="?range=30"
+               class="btn {% if range_days == 30 %}btn-primary{% else %}btn-secondary{% endif %}"
+               style="margin-right:4px;">30d</a>
+            <a href="?range=90"
+               class="btn {% if range_days == 90 %}btn-primary{% else %}btn-secondary{% endif %}">90d</a>
+        </div>
+    </div>
+    <canvas id="leadsChart" height="80"></canvas>
+</div>
+
+<!-- Existing tables (unchanged) -->
 <div class="metrics-grid">
     <div class="card">
         <h3>Leads by source</h3>
@@ -49,7 +92,7 @@
     </div>
 
     <div class="card">
-        <h3>Top searched (last 7 days)</h3>
+        <h3>Top searched (last {{ range_days }} days)</h3>
         {% if top_searches %}
         <table class="compact-table">
             <thead><tr><th>Brand / Model</th><th>Searches</th></tr></thead>
@@ -67,4 +110,47 @@
         {% endif %}
     </div>
 </div>
+
+<!-- Chart.js CDN + initialization — D-01 -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+(function() {
+    var labels = {{ chart_labels | tojson }};
+    var data = {{ chart_data | tojson }};
+    var ctx = document.getElementById('leadsChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Leads',
+                data: data,
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59,130,246,0.1)',
+                tension: 0.3,
+                fill: true,
+                pointRadius: 3,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { stepSize: 1, precision: 0 }
+                },
+                x: {
+                    ticks: {
+                        maxTicksLimit: 10,
+                        maxRotation: 45
+                    }
+                }
+            }
+        }
+    });
+})();
+</script>
 {% endblock %}
