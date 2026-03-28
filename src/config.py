@@ -45,5 +45,8 @@ class Settings(BaseSettings):
     default_language: str = "es-AR"
     fallback_language: str = "en"
 
+    # Monitoring
+    sentry_dsn: str = ""                         # Sentry DSN — leave empty to disable
+
 
 settings = Settings()
