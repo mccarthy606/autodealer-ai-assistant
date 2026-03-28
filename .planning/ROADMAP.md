@@ -21,7 +21,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 7: Admin Dashboard & Analytics** - Per-tenant dashboard with stats, conversations, leads
 - [ ] **Phase 8: Billing** - Lemon Squeezy subscription, webhook lifecycle, access gating, grace period
 - [ ] **Phase 9: Production Deployment** - Docker prod profile, Caddy TLS, Sentry, backups, health checks, migrations
-- [ ] **Phase 10: Client Integration Setup** - Self-service UI for dealerships to connect WhatsApp Business and MercadoLibre without .env editing
+- [x] **Phase 10: Client Integration Setup** - Self-service UI for dealerships to connect WhatsApp Business and MercadoLibre without .env editing (completed 2026-03-28)
 
 ## Phase Details
 
@@ -162,7 +162,7 @@ Plans:
 - [x] 10-01-PLAN.md — Migration 008 + Dealership model: add 5 credential columns (whatsapp_webhook_secret, ml_access_token, ml_refresh_token, ml_app_id, ml_client_secret)
 - [x] 10-02-PLAN.md — ml_token_manager.py per-dealer key refactor + MercadoLibreAdapter._ensure_token() update
 - [x] 10-03-PLAN.md — webhook_cloud.py: default dealership fallback when phone_number_id not in DB
-- [ ] 10-04-PLAN.md — Admin integrations page redesign: Spanish credential forms + save route + test-connection endpoint
+- [x] 10-04-PLAN.md — Admin integrations page redesign: Spanish credential forms + save route + test-connection endpoint
 
 ## Progress
 
@@ -180,4 +180,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 7. Admin Dashboard & Analytics | 0/? | Not started | - |
 | 8. Billing | 0/? | Not started | - |
 | 9. Production Deployment | 0/3 | Planning complete | - |
-| 10. Client Integration Setup | 3/4 | In Progress|  |
+| 10. Client Integration Setup | 4/4 | Complete    | 2026-03-28 |
