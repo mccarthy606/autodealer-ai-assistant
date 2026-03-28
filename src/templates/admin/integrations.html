@@ -1,39 +1,122 @@
 {% extends "base.html" %}
-{% block title %}Integrations{% endblock %}
+{% block title %}Integraciones{% endblock %}
 {% block content %}
 <div class="page-header">
-    <h1>Integrations</h1>
+    <h1>Integraciones</h1>
+    {% if saved %}<div class="alert alert-success">Credenciales guardadas.</div>{% endif %}
 </div>
 
+<form method="post" action="/admin/ui/integrations">
 <div class="integrations-grid">
+
+    <!-- WhatsApp Business Cloud -->
+    <div class="card integration-card">
+        <div class="integration-header">
+            <h3>WhatsApp Business Cloud</h3>
+            <span class="badge {% if wa_configured %}badge-connected{% else %}badge-disconnected{% endif %}">
+                {{ 'Conectado' if wa_configured else 'No configurado' }}
+            </span>
+        </div>
+
+        <div class="form-group">
+            <label>ID de numero de telefono</label>
+            <input type="text" name="whatsapp_phone_number_id"
+                   value="{{ dealer.whatsapp_phone_number_id or '' }}"
+                   placeholder="Ej: 1234567890">
+        </div>
+        <div class="form-group">
+            <label>Token de acceso</label>
+            <input type="password" name="whatsapp_access_token"
+                   value=""
+                   placeholder="{{ '(token guardado — dejar en blanco para no cambiar)' if wa_configured else 'Pegar token aqui' }}">
+        </div>
+        <div class="form-group">
+            <label>Token de verificacion</label>
+            <input type="text" name="whatsapp_verify_token"
+                   value=""
+                   placeholder="{{ '(guardado)' if dealer and dealer.whatsapp_verify_token else 'Crear un token secreto' }}">
+        </div>
+        <div class="form-group">
+            <label>Secreto del webhook</label>
+            <input type="password" name="whatsapp_webhook_secret"
+                   value=""
+                   placeholder="{{ '(guardado)' if dealer and dealer.whatsapp_webhook_secret else 'App Secret de Meta (opcional)' }}">
+        </div>
+        <div class="form-group">
+            <span class="hint">URL del webhook: <code>/webhooks/whatsapp_cloud</code></span>
+        </div>
+
+        <div style="display:flex;gap:8px;align-items:center;margin-top:12px;">
+            <button type="button" class="btn btn-secondary"
+                    onclick="testConnection('whatsapp', this)">Verificar conexion</button>
+            <span id="wa-test-result" style="font-size:14px;"></span>
+        </div>
+
+        <!-- Checklist de activacion WhatsApp (collapsible) -->
+        <details style="margin-top:16px;">
+            <summary style="cursor:pointer;font-weight:600;">Checklist de activacion WhatsApp</summary>
+            <ol style="margin-top:8px;padding-left:20px;line-height:1.8;">
+                <li>Abrir Meta for Developers &rarr; WhatsApp &rarr; API Setup</li>
+                <li>Verificar que el numero este en modo &ldquo;Live&rdquo; (no &ldquo;Development&rdquo;)</li>
+                <li>En Development mode: agregar el numero del cliente al whitelist de prueba</li>
+                <li>Configurar el webhook URL: <code>https://tu-dominio/webhooks/whatsapp_cloud</code></li>
+                <li>El Verify Token debe coincidir con el campo guardado arriba</li>
+            </ol>
+        </details>
+    </div>
+
     <!-- MercadoLibre -->
     <div class="card integration-card">
         <div class="integration-header">
             <h3>MercadoLibre</h3>
             <span class="badge {% if ml_configured %}badge-connected{% else %}badge-disconnected{% endif %}">
-                {{ 'API Connected' if ml_configured else 'Manual import' }}
+                {{ 'Conectado' if ml_configured else 'No configurado' }}
             </span>
         </div>
 
-        <!-- Import by URL -->
-        <div class="ml-import-section">
-            <h4>Import car from ML link</h4>
-            <p class="hint">Paste a link to any MercadoLibre listing to add it to your inventory.</p>
-            <form method="post" action="/admin/ui/cars/import-ml-url" class="import-form">
-                <div style="display:flex;gap:12px;align-items:flex-end;">
-                    <div class="form-group" style="flex:1">
-                        <input type="text" name="ml_url" placeholder="https://auto.mercadolibre.com.ar/MLA-..." style="font-size:15px;">
-                    </div>
-                    <button type="submit" class="btn btn-primary">Import</button>
-                </div>
-            </form>
+        <div class="form-group">
+            <label>ID de usuario ML</label>
+            <input type="text" name="ml_user_id"
+                   value="{{ dealer.ml_user_id or '' }}"
+                   placeholder="Tu seller ID de MercadoLibre">
+        </div>
+        <div class="form-group">
+            <label>Token de acceso ML</label>
+            <input type="password" name="ml_access_token"
+                   value=""
+                   placeholder="{{ '(token guardado — dejar en blanco para no cambiar)' if ml_configured else 'Pegar access_token aqui' }}">
+        </div>
+        <div class="form-group">
+            <label>Token de refresco ML</label>
+            <input type="password" name="ml_refresh_token"
+                   value=""
+                   placeholder="{{ '(guardado)' if dealer and dealer.ml_refresh_token else 'Pegar refresh_token aqui' }}">
+        </div>
+        <div class="form-group">
+            <label>ID de aplicacion ML</label>
+            <input type="text" name="ml_app_id"
+                   value="{{ dealer.ml_app_id or '' }}"
+                   placeholder="App ID de tu aplicacion ML">
+        </div>
+        <div class="form-group">
+            <label>Secreto de cliente ML</label>
+            <input type="password" name="ml_client_secret"
+                   value=""
+                   placeholder="{{ '(guardado)' if dealer and dealer.ml_client_secret else 'Client Secret de tu app ML' }}">
         </div>
 
+        <div style="display:flex;gap:8px;align-items:center;margin-top:12px;">
+            <button type="button" class="btn btn-secondary"
+                    onclick="testConnection('mercadolibre', this)">Verificar conexion</button>
+            <span id="ml-test-result" style="font-size:14px;"></span>
+        </div>
+
+        <!-- ML linked cars — preserved as-is -->
         {% if ml_cars %}
         <hr style="margin: 16px 0; border: none; border-top: 1px solid var(--border);">
-        <h4>Linked ML listings ({{ ml_cars|length }})</h4>
+        <h4>Listings vinculados a ML ({{ ml_cars|length }})</h4>
         <table class="compact-table">
-            <thead><tr><th>Car</th><th>ML Item ID</th><th>Photos</th><th>Price</th></tr></thead>
+            <thead><tr><th>Auto</th><th>ML Item ID</th><th>Fotos</th><th>Precio</th></tr></thead>
             <tbody>
                 {% for car in ml_cars %}
                 <tr>
@@ -47,73 +130,48 @@
         </table>
         {% endif %}
 
-        {% if ml_configured %}
-        <div class="info-list" style="margin-top: 16px;">
-            <div class="info-item">
-                <span>API Token</span>
-                <strong class="text-success">Set</strong>
-            </div>
-            <div class="info-item">
-                <span>Webhook URL</span>
-                <code>/webhooks/mercadolibre</code>
-            </div>
+        <!-- ML import by URL — preserved as-is -->
+        <div class="ml-import-section" style="margin-top:16px;">
+            <h4>Importar auto por link ML</h4>
+            <form method="post" action="/admin/ui/cars/import-ml-url" class="import-form">
+                <div style="display:flex;gap:12px;align-items:flex-end;">
+                    <div class="form-group" style="flex:1">
+                        <input type="text" name="ml_url" placeholder="https://auto.mercadolibre.com.ar/MLA-..." style="font-size:15px;">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Importar</button>
+                </div>
+            </form>
         </div>
-        {% else %}
-        <details style="margin-top: 16px;">
-            <summary>API setup (optional — for auto-answering questions)</summary>
-            <div class="integration-setup">
-                <ol>
-                    <li>Register app at <a href="https://developers.mercadolibre.com.ar" target="_blank">developers.mercadolibre.com.ar</a></li>
-                    <li>Get access token via OAuth</li>
-                    <li>Set in <code>.env</code>:
-                        <pre>ML_ACCESS_TOKEN=your_token
-ML_USER_ID=your_seller_id</pre>
-                    </li>
-                    <li>Webhook: <code>https://your-domain/webhooks/mercadolibre</code></li>
-                </ol>
-            </div>
-        </details>
-        {% endif %}
     </div>
 
-    <!-- WhatsApp -->
-    <div class="card integration-card">
-        <div class="integration-header">
-            <h3>WhatsApp Business Cloud</h3>
-            <span class="badge {% if wa_configured %}badge-connected{% else %}badge-disconnected{% endif %}">
-                {{ 'Connected' if wa_configured else 'Not configured' }}
-            </span>
-        </div>
-        <div class="info-list">
-            <div class="info-item">
-                <span>Phone Number ID</span>
-                <strong>{{ wa_phone_id }}</strong>
-            </div>
-            <div class="info-item">
-                <span>Verify Token</span>
-                <strong>{{ 'Set' if wa_verify_token else 'Not set' }}</strong>
-            </div>
-            <div class="info-item">
-                <span>Webhook URL</span>
-                <code>/webhooks/whatsapp_cloud</code>
-            </div>
-        </div>
-        {% if not wa_configured %}
-        <div class="integration-setup">
-            <h4>Setup</h4>
-            <ol>
-                <li>Create a Meta Business App at <a href="https://developers.facebook.com" target="_blank">developers.facebook.com</a></li>
-                <li>Enable WhatsApp Business API</li>
-                <li>Set in <code>.env</code>:
-                    <pre>WHATSAPP_CLOUD_TOKEN=your_token
-WHATSAPP_PHONE_NUMBER_ID=your_phone_id
-WHATSAPP_VERIFY_TOKEN=your_verify_token</pre>
-                </li>
-                <li>Webhook: <code>https://your-domain/webhooks/whatsapp_cloud</code></li>
-                <li>Restart: <code>docker compose restart api</code></li>
-            </ol>
-        </div>
-        {% endif %}
-    </div>
+</div><!-- end integrations-grid -->
+
+<div style="margin-top:20px;">
+    <button type="submit" class="btn btn-primary">Guardar credenciales</button>
 </div>
+</form>
+
+<script>
+async function testConnection(service, btn) {
+    const resultId = service === 'whatsapp' ? 'wa-test-result' : 'ml-test-result';
+    const el = document.getElementById(resultId);
+    el.textContent = 'Verificando...';
+    btn.disabled = true;
+    try {
+        const r = await fetch('/admin/ui/integrations/test-connection', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({service: service})
+        });
+        const data = await r.json();
+        el.textContent = data.ok ? '\u2705 ' + data.detail : '\u274c ' + data.detail;
+        el.style.color = data.ok ? 'var(--success, green)' : 'var(--danger, red)';
+    } catch (e) {
+        el.textContent = '\u274c Error de red';
+        el.style.color = 'var(--danger, red)';
+    } finally {
+        btn.disabled = false;
+    }
+}
+</script>
 {% endblock %}
