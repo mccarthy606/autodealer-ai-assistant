@@ -26,8 +26,15 @@ class MercadoLibreAdapter(ChannelAdapter):
         self.user_id = settings.ml_user_id
         self.is_configured = bool(self.token and self.user_id)
 
+    async def _ensure_token(self, dealership_id: int = 1, dealer=None) -> None:
+        """Refresh ML token if near expiry before making an API call."""
+        from src.services.ml_token_manager import get_valid_token
+        self.token = await get_valid_token(dealership_id=dealership_id, dealer=dealer)
+        self.is_configured = bool(self.token and self.user_id)
+
     async def send_text(self, to: str, text: str) -> dict:
         """Send answer to ML question. 'to' is the question_id."""
+        await self._ensure_token()
         if not self.is_configured:
             logger.info("[ML MOCK] send_text question_id=%s: %s", to, text[:100])
             return {"status": "mock", "question_id": to}
@@ -51,6 +58,7 @@ class MercadoLibreAdapter(ChannelAdapter):
         Fetch active listings from MercadoLibre using seller user_id.
         Returns list of parsed items.
         """
+        await self._ensure_token()
         if not self.is_configured:
             logger.info("[ML MOCK] sync_listings - no token")
             return []
@@ -68,6 +76,7 @@ class MercadoLibreAdapter(ChannelAdapter):
 
     async def get_questions(self, status: str = "UNANSWERED") -> list[dict]:
         """Fetch unanswered questions."""
+        await self._ensure_token()
         if not self.is_configured:
             return []
 
@@ -88,6 +97,7 @@ class MercadoLibreAdapter(ChannelAdapter):
         For vehicles category, ML provides contact info when buyer clicks
         'Quiero que me contacten'. Per D-04.
         """
+        await self._ensure_token()
         if not self.is_configured:
             logger.info("[ML MOCK] get_buyer_contact question_id=%s", question_id)
             return None
