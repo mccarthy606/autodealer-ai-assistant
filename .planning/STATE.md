@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: v1.0 complete — planning v1.1
-stopped_at: All 10 phases complete. 201 tests passing. Ready for new phases.
-last_updated: "2026-03-28T18:00:00.000Z"
+status: Ready to execute
+stopped_at: Completed 13-01-PLAN.md
+last_updated: "2026-03-28T22:44:37.058Z"
 progress:
-  total_phases: 10
-  completed_phases: 10
-  total_plans: 27
-  completed_plans: 27
+  total_phases: 15
+  completed_phases: 12
+  total_plans: 36
+  completed_plans: 34
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** Bot catches ML leads, writes customer on WhatsApp first, closes on dealership visit.
-**Current focus:** Phase 10 — client-integration-setup
+**Current focus:** Phase 13 — analytics-dashboard
 
 ## Current Position
 
-Phase: 10
-Plan: Not started
+Phase: 13 (analytics-dashboard) — EXECUTING
+Plan: 2 of 3
 
 ## Performance Metrics
 
@@ -64,6 +64,7 @@ Plan: Not started
 | Phase 10 P02 | 8min | 2 tasks | 2 files |
 | Phase 11 P01 | 5min | 3 tasks | 3 files |
 | Phase 11 P02 | 5min | 2 tasks | 2 files |
+| Phase 13 P01 | 5min | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -112,6 +113,7 @@ Recent decisions affecting current work:
 - [Phase 11-01]: Lazy import of get_valid_token inside sync_all_listings() matches existing _ensure_token() pattern; pagination exits on empty results OR offset >= total
 - [Phase 11-02]: asyncio.run() used to call async sync_all_listings() from sync Celery worker (same pattern as Phase 05)
 - [Phase 11-02]: Sold-item marking filtered to source=="mercadolibre" only — prevents touching sheet/manual inventory rows
+- [Phase 13]: _pct() helper defined at module level; funnel uses all-time counts per D-03; top_searches uses range_start; zero-fill generates full date list from today backwards
 
 ### Pending Todos
 
@@ -125,6 +127,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-28T19:00:00.000Z
-Stopped at: Completed 11-02-PLAN.md
+Last session: 2026-03-28T22:44:37.055Z
+Stopped at: Completed 13-01-PLAN.md
 Resume file: None

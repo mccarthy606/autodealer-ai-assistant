@@ -32,10 +32,10 @@
 - [ ] **MT-04**: Redis ключи с tenant-prefix для изоляции кэша
 
 ### Admin Dashboard & Analytics
-- [ ] **DASH-01**: Личный кабинет автосалона с обзором активности
-- [ ] **DASH-02**: Статистика: кол-во лидов, конверсия в визиты, время ответа
-- [ ] **DASH-03**: Топ запрашиваемых марок/моделей
-- [ ] **DASH-04**: Список всех диалогов с историей сообщений
+- [x] **DASH-01**: Личный кабинет автосалона с обзором активности
+- [x] **DASH-02**: Статистика: кол-во лидов, конверсия в визиты, время ответа
+- [x] **DASH-03**: Топ запрашиваемых марок/моделей
+- [x] **DASH-04**: Список всех диалогов с историей сообщений
 - [ ] **DASH-05**: Список лидов с фильтрацией по статусу
 
 ### Billing (Lemon Squeezy)
@@ -121,10 +121,10 @@
 | MT-02 | Phase 6 | Pending |
 | MT-03 | Phase 6 | Pending |
 | MT-04 | Phase 6 | Pending |
-| DASH-01 | Phase 7 | Pending |
-| DASH-02 | Phase 7 | Pending |
-| DASH-03 | Phase 7 | Pending |
-| DASH-04 | Phase 7 | Pending |
+| DASH-01 | Phase 7 | Complete |
+| DASH-02 | Phase 7 | Complete |
+| DASH-03 | Phase 7 | Complete |
+| DASH-04 | Phase 7 | Complete |
 | DASH-05 | Phase 7 | Pending |
 | BILL-01 | Phase 8 | Pending |
 | BILL-02 | Phase 8 | Pending |

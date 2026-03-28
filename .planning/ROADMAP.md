@@ -2,7 +2,7 @@
 
 ## Overview
 
-Transform existing WhatsApp bot MVP into a production SaaS for Argentine auto dealerships. The core business flow is outbound: ML lead arrives, system detects car of interest, writes customer on WhatsApp first, scripts to close on visit. Nine phases take us from tech debt cleanup through production deployment, building on top of existing code (conversation engine, intent detection, WhatsApp integration, admin UI, Docker Compose).
+Transform existing WhatsApp bot MVP into a production SaaS for Argentine auto dealerships. The core business flow is outbound: ML lead arrives, system detects car of interest, writes customer on WhatsApp first, scripts to close on visit. Phases 1–10 complete the foundation. Phases 11–15 build the full product: live ML inventory sync, AI agent, analytics, client onboarding, and test deployment.
 
 ## Phases
 
@@ -12,16 +12,21 @@ Transform existing WhatsApp bot MVP into a production SaaS for Argentine auto de
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Refactoring & Tech Debt** - Merge dual engines, split admin monolith, fix deprecated APIs
-- [ ] **Phase 2: Security Hardening** - CORS lockdown, proper auth, webhook verification, rate limiting
-- [ ] **Phase 3: Engine Consolidation** - Unified conversation engine with correct state machine, multilingual, dedup
-- [ ] **Phase 4: Outbound Flow** - ML lead detection, auto-first-contact via WhatsApp, visit-closing script
-- [ ] **Phase 5: Follow-Up Automation** - Template-based reminders at 24h/3d, opt-out respect, message limits
-- [ ] **Phase 6: Multi-Tenancy** - Data isolation, tenant middleware, webhook routing, cache separation
-- [ ] **Phase 7: Admin Dashboard & Analytics** - Per-tenant dashboard with stats, conversations, leads
-- [ ] **Phase 8: Billing** - Lemon Squeezy subscription, webhook lifecycle, access gating, grace period
-- [ ] **Phase 9: Production Deployment** - Docker prod profile, Caddy TLS, Sentry, backups, health checks, migrations
+- [x] **Phase 1: Refactoring & Tech Debt** - Merge dual engines, split admin monolith, fix deprecated APIs (completed 2026-03-28)
+- [x] **Phase 2: Security Hardening** - CORS lockdown, proper auth, webhook verification, rate limiting (completed 2026-03-28)
+- [x] **Phase 3: Engine Consolidation** - Unified conversation engine with correct state machine, multilingual, dedup (completed 2026-03-28)
+- [x] **Phase 4: Outbound Flow** - ML lead detection, auto-first-contact via WhatsApp, visit-closing script (completed 2026-03-28)
+- [x] **Phase 5: Follow-Up Automation** - Template-based reminders at 24h/3d, opt-out respect, message limits (completed 2026-03-28)
+- [x] **Phase 6: Multi-Tenancy** - Data isolation, tenant middleware, webhook routing, cache separation (completed 2026-03-28)
+- [x] **Phase 7: Admin Dashboard & Analytics** - Per-tenant dashboard with stats, conversations, leads (completed 2026-03-28)
+- [x] **Phase 8: Billing** - Lemon Squeezy subscription, webhook lifecycle, access gating, grace period (completed 2026-03-28)
+- [x] **Phase 9: Production Deployment** - Docker prod profile, Caddy TLS, Sentry, backups, health checks, migrations (completed 2026-03-28)
 - [x] **Phase 10: Client Integration Setup** - Self-service UI for dealerships to connect WhatsApp Business and MercadoLibre without .env editing (completed 2026-03-28)
+- [x] **Phase 11: MercadoLibre Inventory Sync** - Pull ML listings into InventoryItems DB via API; Celery periodic sync; AI agent operates on live ML data (completed 2026-03-28)
+- [x] **Phase 12: AI Agent (LLM Integration)** - Connect Claude/GPT to conversation engine; agent answers using inventory context; rule-based fallback (completed 2026-03-28)
+- [ ] **Phase 13: Analytics Dashboard** - Conversion funnel, lead stats over time, top brands/models, CSV export
+- [ ] **Phase 14: Client Onboarding** - Guided setup wizard in Admin UI; all instructions built-in (WA Business, ML app); client provides data → system configures itself
+- [ ] **Phase 15: Test Deployment** - VPS deploy without domain (IP or free subdomain); full end-to-end test with real WhatsApp and ML
 
 ## Phase Details
 
@@ -164,20 +169,94 @@ Plans:
 - [x] 10-03-PLAN.md — webhook_cloud.py: default dealership fallback when phone_number_id not in DB
 - [x] 10-04-PLAN.md — Admin integrations page redesign: Spanish credential forms + save route + test-connection endpoint
 
+### Phase 11: MercadoLibre Inventory Sync
+**Goal**: AI agent operates on live inventory data pulled from MercadoLibre — dealership's ML listings become the knowledge base
+**Depends on**: Phase 10
+**Success Criteria** (what must be TRUE):
+  1. Admin UI has a "Sync from MercadoLibre" button that imports all active ML listings as InventoryItems
+  2. Celery periodic task syncs ML inventory automatically (configurable interval)
+  3. Sync handles pagination, updates existing items, marks sold/paused items accordingly
+  4. AI agent answers inventory questions using ML-sourced data (brand, model, year, price, km, photos)
+  5. Sync errors are logged and visible in Admin UI — dealer sees what failed and why
+**Plans**: 3 plans
+Plans:
+- [ ] 11-01-PLAN.md — Migration 009 + Dealership model sync columns + MercadoLibreAdapter.sync_all_listings() with pagination
+- [ ] 11-02-PLAN.md — Celery task sync_ml_inventory_all_dealers + upsert + mark-sold + beat schedule
+- [ ] 11-03-PLAN.md — Admin UI: POST /cars/sync-ml route + cars.html button/status line + 6 unit tests
+
+### Phase 12: AI Agent (LLM Integration)
+**Goal**: Conversation engine uses Claude/GPT to generate natural, context-aware responses using live inventory data
+**Depends on**: Phase 11
+**Success Criteria** (what must be TRUE):
+  1. llm_service.py is fully wired into conversation_engine.py — LLM generates responses when llm_enabled=True
+  2. LLM receives inventory context (matching cars, specs, prices) with every request
+  3. Responses feel natural and Spanish-first — not template strings
+  4. Rule-based engine remains as fallback when LLM is unavailable or times out
+  5. Per-dealer LLM config: dealer can set their own API key and model in Admin UI
+**Plans**: 3 plans
+Plans:
+- [ ] 12-01-PLAN.md — Migration 010 + Dealership model: add llm_api_key, llm_model, llm_enabled columns
+- [ ] 12-02-PLAN.md — conversation_engine.py: replace rephrase() hook with full generate_response() + silent fallback
+- [ ] 12-03-PLAN.md — Admin Settings UI: 3 new LLM fields + save route updates + 3 unit tests
+
+### Phase 13: Analytics Dashboard
+**Goal**: Dealership owner has clear visibility into bot performance and lead conversion
+**Depends on**: Phase 12
+**Success Criteria** (what must be TRUE):
+  1. Dashboard shows conversion funnel: conversations → leads → visits scheduled → closed
+  2. Lead stats chart shows volume over time (last 7d / 30d / 90d)
+  3. Top 10 requested brands/models ranked by inquiry count
+  4. Average bot response time and handoff rate visible
+  5. All data exportable as CSV
+**Plans**: 3 plans
+Plans:
+- [x] 13-01-PLAN.md — Extend metrics_page(): range param, funnel queries, lead-volume-over-time data
+- [ ] 13-02-PLAN.md — Update metrics.html: funnel stat-cards, Chart.js line chart, range toggle buttons
+- [ ] 13-03-PLAN.md — CSV export: GET /leads/export-csv route + Exportar CSV button on leads.html
+**UI hint**: yes
+
+### Phase 14: Client Onboarding
+**Goal**: New dealership can go from zero to fully configured without any manual help from us
+**Depends on**: Phase 13
+**Success Criteria** (what must be TRUE):
+  1. Admin UI has a step-by-step onboarding wizard (WA Business setup → ML app → inventory sync → test message)
+  2. Every step has built-in instructions in Spanish — no external docs needed
+  3. Progress checklist shows what's configured and what's missing
+  4. System validates each step before allowing the next (e.g., can't proceed without WA credentials saved)
+  5. Dealer can send a test WhatsApp message to themselves from the onboarding UI
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 15: Test Deployment
+**Goal**: Full system running on a VPS and reachable for end-to-end testing with real WhatsApp — no domain purchase required
+**Depends on**: Phase 14
+**Success Criteria** (what must be TRUE):
+  1. System deployed on VPS (Hetzner CX21 or equivalent) via docker-compose.prod.yml
+  2. Accessible via IP or free subdomain (sslip.io / nip.io) with HTTPS
+  3. Real WhatsApp message flows end-to-end: receive → AI response → send back
+  4. MercadoLibre webhook receives and processes a real ML inquiry
+  5. Admin UI accessible and functional at the deployment URL
+**Plans**: TBD
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
+Phases 1–12 complete. Active: Phase 13 → 14 → 15
 
-| Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
-| 1. Refactoring & Tech Debt | 3/3 | Planning complete | - |
-| 2. Security Hardening | 2/2 | Executing | - |
-| 3. Engine Consolidation | 1/2 | Executing | - |
-| 4. Outbound Flow | 1/2 | Executing | - |
-| 5. Follow-Up Automation | 0/? | Not started | - |
-| 6. Multi-Tenancy | 0/? | Not started | - |
-| 7. Admin Dashboard & Analytics | 0/? | Not started | - |
-| 8. Billing | 0/? | Not started | - |
-| 9. Production Deployment | 0/3 | Planning complete | - |
-| 10. Client Integration Setup | 4/4 | Complete    | 2026-03-28 |
+| Phase | Status | Completed |
+|-------|--------|-----------|
+| 1. Refactoring & Tech Debt | ✅ Complete | 2026-03-28 |
+| 2. Security Hardening | ✅ Complete | 2026-03-28 |
+| 3. Engine Consolidation | ✅ Complete | 2026-03-28 |
+| 4. Outbound Flow | ✅ Complete | 2026-03-28 |
+| 5. Follow-Up Automation | ✅ Complete | 2026-03-28 |
+| 6. Multi-Tenancy | ✅ Complete | 2026-03-28 |
+| 7. Admin Dashboard & Analytics | ✅ Complete | 2026-03-28 |
+| 8. Billing | ✅ Complete | 2026-03-28 |
+| 9. Production Deployment | ✅ Complete | 2026-03-28 |
+| 10. Client Integration Setup | ✅ Complete | 2026-03-28 |
+| 11. MercadoLibre Inventory Sync | ✅ Complete | 2026-03-28 |
+| 12. AI Agent (LLM Integration) | ✅ Complete | 2026-03-28 |
+| 13. Analytics Dashboard | 🔄 Planned | - |
+| 14. Client Onboarding | 🔄 Not started | - |
+| 15. Test Deployment | 🔄 Not started | - |
