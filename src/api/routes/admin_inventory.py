@@ -13,7 +13,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.deps import get_db
 from src.api.routes.admin_common import auth_check, templates
-from src.config import settings
 from src.db.models import (
     InventoryItem, Event,
     StatusEnum, ConditionEnum,
@@ -28,11 +27,9 @@ logger = logging.getLogger(__name__)
 
 @router.get("/cars", response_class=HTMLResponse)
 async def cars_list(request: Request, db: AsyncSession = Depends(get_db)):
-    redir = await auth_check(request)
-    if redir:
-        return redir
-
-    did = settings.default_dealership_id
+    did = await auth_check(request)
+    if not isinstance(did, int):
+        return did
     q = request.query_params.get("q", "").strip()
     status_filter = request.query_params.get("status", "").strip()
     condition_filter = request.query_params.get("condition", "").strip()
@@ -70,9 +67,9 @@ async def cars_list(request: Request, db: AsyncSession = Depends(get_db)):
 
 @router.get("/cars/new", response_class=HTMLResponse)
 async def car_new(request: Request):
-    redir = await auth_check(request)
-    if redir:
-        return redir
+    did = await auth_check(request)
+    if not isinstance(did, int):
+        return did
     return templates.TemplateResponse("admin/car_form.html", {
         "request": request,
         "car": None,
@@ -82,9 +79,9 @@ async def car_new(request: Request):
 
 @router.post("/cars/new")
 async def car_create(request: Request, db: AsyncSession = Depends(get_db)):
-    redir = await auth_check(request)
-    if redir:
-        return redir
+    did = await auth_check(request)
+    if not isinstance(did, int):
+        return did
 
     form = await request.form()
     photos = [u.strip() for u in (form.get("photos", "") or "").split("\n") if u.strip()]
@@ -101,7 +98,7 @@ async def car_create(request: Request, db: AsyncSession = Depends(get_db)):
         status = StatusEnum.available
 
     item = InventoryItem(
-        dealership_id=settings.default_dealership_id,
+        dealership_id=did,
         brand=(form.get("brand") or "").strip(),
         model=(form.get("model") or "").strip(),
         trim=(form.get("trim") or "").strip() or None,
@@ -123,7 +120,7 @@ async def car_create(request: Request, db: AsyncSession = Depends(get_db)):
     await db.flush()
 
     db.add(Event(
-        dealership_id=settings.default_dealership_id,
+        dealership_id=did,
         type="car_created",
         payload={"car_id": item.id},
     ))
@@ -135,13 +132,13 @@ async def car_create(request: Request, db: AsyncSession = Depends(get_db)):
 
 @router.get("/cars/{car_id}", response_class=HTMLResponse)
 async def car_detail(car_id: int, request: Request, db: AsyncSession = Depends(get_db)):
-    redir = await auth_check(request)
-    if redir:
-        return redir
+    did = await auth_check(request)
+    if not isinstance(did, int):
+        return did
 
     stmt = select(InventoryItem).where(
         InventoryItem.id == car_id,
-        InventoryItem.dealership_id == settings.default_dealership_id,
+        InventoryItem.dealership_id == did,
     )
     r = await db.execute(stmt)
     car = r.scalar_one_or_none()
@@ -171,9 +168,9 @@ async def car_detail(car_id: int, request: Request, db: AsyncSession = Depends(g
 
 @router.get("/cars/{car_id}/edit", response_class=HTMLResponse)
 async def car_edit(car_id: int, request: Request, db: AsyncSession = Depends(get_db)):
-    redir = await auth_check(request)
-    if redir:
-        return redir
+    did = await auth_check(request)
+    if not isinstance(did, int):
+        return did
 
     stmt = select(InventoryItem).where(InventoryItem.id == car_id)
     r = await db.execute(stmt)
@@ -190,9 +187,9 @@ async def car_edit(car_id: int, request: Request, db: AsyncSession = Depends(get
 
 @router.post("/cars/{car_id}/edit")
 async def car_update(car_id: int, request: Request, db: AsyncSession = Depends(get_db)):
-    redir = await auth_check(request)
-    if redir:
-        return redir
+    did = await auth_check(request)
+    if not isinstance(did, int):
+        return did
 
     stmt = select(InventoryItem).where(InventoryItem.id == car_id)
     r = await db.execute(stmt)
@@ -232,9 +229,9 @@ async def car_update(car_id: int, request: Request, db: AsyncSession = Depends(g
 
 @router.post("/cars/{car_id}/sold")
 async def car_mark_sold(car_id: int, request: Request, db: AsyncSession = Depends(get_db)):
-    redir = await auth_check(request)
-    if redir:
-        return redir
+    did = await auth_check(request)
+    if not isinstance(did, int):
+        return did
 
     stmt = select(InventoryItem).where(InventoryItem.id == car_id)
     r = await db.execute(stmt)
@@ -247,9 +244,9 @@ async def car_mark_sold(car_id: int, request: Request, db: AsyncSession = Depend
 
 @router.post("/cars/{car_id}/duplicate")
 async def car_duplicate(car_id: int, request: Request, db: AsyncSession = Depends(get_db)):
-    redir = await auth_check(request)
-    if redir:
-        return redir
+    did = await auth_check(request)
+    if not isinstance(did, int):
+        return did
 
     stmt = select(InventoryItem).where(InventoryItem.id == car_id)
     r = await db.execute(stmt)
@@ -275,9 +272,9 @@ async def car_duplicate(car_id: int, request: Request, db: AsyncSession = Depend
 
 @router.post("/cars/import")
 async def cars_import(request: Request, db: AsyncSession = Depends(get_db)):
-    redir = await auth_check(request)
-    if redir:
-        return redir
+    did = await auth_check(request)
+    if not isinstance(did, int):
+        return did
 
     form = await request.form()
     file = form.get("file")
@@ -307,7 +304,7 @@ async def cars_import(request: Request, db: AsyncSession = Depends(get_db)):
             continue
 
         item = InventoryItem(
-            dealership_id=settings.default_dealership_id,
+            dealership_id=did,
             brand=brand, model=model_name, year=year, price=price,
             condition=ConditionEnum.used, status=StatusEnum.available,
             currency="ARS", source="csv",
@@ -327,9 +324,9 @@ async def import_ml_url(request: Request, db: AsyncSession = Depends(get_db)):
     Parses the URL for MLA ID + brand/model from slug,
     then redirects to the car form pre-filled with data.
     """
-    redir = await auth_check(request)
-    if redir:
-        return redir
+    did = await auth_check(request)
+    if not isinstance(did, int):
+        return did
 
     form = await request.form()
     ml_url = (form.get("ml_url") or "").strip()
@@ -341,8 +338,6 @@ async def import_ml_url(request: Request, db: AsyncSession = Depends(get_db)):
     parsed = parse_ml_url(ml_url)
     if not parsed:
         return RedirectResponse(url="/admin/ui/cars?error=invalid_url", status_code=302)
-
-    did = settings.default_dealership_id
     ml_id = parsed["ml_item_id"]
 
     # Check if already exists
@@ -372,12 +367,11 @@ async def import_ml_url_save(request: Request, db: AsyncSession = Depends(get_db
     """
     Save a car imported from ML URL. Receives full form data.
     """
-    redir = await auth_check(request)
-    if redir:
-        return redir
+    did = await auth_check(request)
+    if not isinstance(did, int):
+        return did
 
     form = await request.form()
-    did = settings.default_dealership_id
 
     brand = (form.get("brand") or "").strip()
     model_name = (form.get("model") or "").strip()

@@ -18,11 +18,11 @@ logger = logging.getLogger(__name__)
 
 @router.get("/settings", response_class=HTMLResponse)
 async def settings_page(request: Request, db: AsyncSession = Depends(get_db)):
-    redir = await auth_check(request)
-    if redir:
-        return redir
+    did = await auth_check(request)
+    if not isinstance(did, int):
+        return did
 
-    stmt = select(Dealership).where(Dealership.id == settings.default_dealership_id)
+    stmt = select(Dealership).where(Dealership.id == did)
     r = await db.execute(stmt)
     dealer = r.scalar_one_or_none()
 
@@ -38,12 +38,12 @@ async def settings_page(request: Request, db: AsyncSession = Depends(get_db)):
 
 @router.post("/settings")
 async def settings_save(request: Request, db: AsyncSession = Depends(get_db)):
-    redir = await auth_check(request)
-    if redir:
-        return redir
+    did = await auth_check(request)
+    if not isinstance(did, int):
+        return did
 
     form = await request.form()
-    stmt = select(Dealership).where(Dealership.id == settings.default_dealership_id)
+    stmt = select(Dealership).where(Dealership.id == did)
     r = await db.execute(stmt)
     dealer = r.scalar_one_or_none()
     if dealer:
@@ -59,16 +59,16 @@ async def settings_save(request: Request, db: AsyncSession = Depends(get_db)):
 
 @router.get("/integrations", response_class=HTMLResponse)
 async def integrations_page(request: Request, db: AsyncSession = Depends(get_db)):
-    redir = await auth_check(request)
-    if redir:
-        return redir
+    did = await auth_check(request)
+    if not isinstance(did, int):
+        return did
 
     wa_configured = bool(settings.whatsapp_cloud_token and settings.whatsapp_phone_number_id)
     ml_configured = bool(settings.ml_access_token and settings.ml_user_id)
 
     # ML linked cars
     stmt = select(InventoryItem).where(
-        InventoryItem.dealership_id == settings.default_dealership_id,
+        InventoryItem.dealership_id == did,
         InventoryItem.ml_item_id.isnot(None),
     )
     r = await db.execute(stmt)

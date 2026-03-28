@@ -9,7 +9,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.deps import get_db
 from src.api.routes.admin_common import auth_check, templates
-from src.config import settings
 from src.db.models import Lead, LeadIntentEnum, LeadStatusEnum
 
 router = APIRouter(prefix="/admin/ui", tags=["admin-ui"])
@@ -18,11 +17,9 @@ logger = logging.getLogger(__name__)
 
 @router.get("/leads", response_class=HTMLResponse)
 async def leads_page(request: Request, db: AsyncSession = Depends(get_db)):
-    redir = await auth_check(request)
-    if redir:
-        return redir
-
-    did = settings.default_dealership_id
+    did = await auth_check(request)
+    if not isinstance(did, int):
+        return did
     intent_filter = request.query_params.get("intent", "").strip()
     status_filter = request.query_params.get("status", "").strip()
     source_filter = request.query_params.get("source", "").strip()

@@ -10,7 +10,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.deps import get_db
 from src.api.routes.admin_common import auth_check, templates
-from src.config import settings
 from src.db.models import (
     Conversation, Message, MessageDirectionEnum,
 )
@@ -22,11 +21,9 @@ logger = logging.getLogger(__name__)
 
 @router.get("/conversations", response_class=HTMLResponse)
 async def conversations_page(request: Request, db: AsyncSession = Depends(get_db)):
-    redir = await auth_check(request)
-    if redir:
-        return redir
-
-    did = settings.default_dealership_id
+    did = await auth_check(request)
+    if not isinstance(did, int):
+        return did
     stmt = (
         select(Conversation)
         .where(Conversation.dealership_id == did)
@@ -58,13 +55,13 @@ async def conversations_page(request: Request, db: AsyncSession = Depends(get_db
 
 @router.get("/conversations/{conv_id}", response_class=HTMLResponse)
 async def conversation_detail(conv_id: int, request: Request, db: AsyncSession = Depends(get_db)):
-    redir = await auth_check(request)
-    if redir:
-        return redir
+    did = await auth_check(request)
+    if not isinstance(did, int):
+        return did
 
     stmt = select(Conversation).where(
         Conversation.id == conv_id,
-        Conversation.dealership_id == settings.default_dealership_id,
+        Conversation.dealership_id == did,
     )
     r = await db.execute(stmt)
     conv = r.scalar_one_or_none()
@@ -88,9 +85,9 @@ async def conversation_detail(conv_id: int, request: Request, db: AsyncSession =
 @router.post("/conversations/{conv_id}/send")
 async def conversation_send(conv_id: int, request: Request, db: AsyncSession = Depends(get_db)):
     """Manager sends a message from the inbox."""
-    redir = await auth_check(request)
-    if redir:
-        return redir
+    did = await auth_check(request)
+    if not isinstance(did, int):
+        return did
 
     form = await request.form()
     text = (form.get("text") or "").strip()
@@ -121,9 +118,9 @@ async def conversation_send(conv_id: int, request: Request, db: AsyncSession = D
 @router.post("/conversations/{conv_id}/takeover")
 async def conversation_takeover(conv_id: int, request: Request, db: AsyncSession = Depends(get_db)):
     """Switch to manager mode."""
-    redir = await auth_check(request)
-    if redir:
-        return redir
+    did = await auth_check(request)
+    if not isinstance(did, int):
+        return did
 
     stmt = select(Conversation).where(Conversation.id == conv_id)
     r = await db.execute(stmt)
@@ -138,9 +135,9 @@ async def conversation_takeover(conv_id: int, request: Request, db: AsyncSession
 @router.post("/conversations/{conv_id}/return-bot")
 async def conversation_return_bot(conv_id: int, request: Request, db: AsyncSession = Depends(get_db)):
     """Return to bot mode."""
-    redir = await auth_check(request)
-    if redir:
-        return redir
+    did = await auth_check(request)
+    if not isinstance(did, int):
+        return did
 
     stmt = select(Conversation).where(Conversation.id == conv_id)
     r = await db.execute(stmt)

@@ -14,7 +14,7 @@ import bcrypt
 from sqlalchemy import select
 
 from src.api.auth import (
-    create_session, clear_session, remove_session, is_authenticated, _check_password,
+    create_session, clear_session, remove_session, _check_password,
 )
 from src.api.routes.admin_common import auth_check, templates
 from src.config import settings
@@ -95,11 +95,9 @@ async def logout_page(request: Request):
 
 @router.get("", response_class=HTMLResponse)
 async def dashboard(request: Request, db: AsyncSession = Depends(get_db)):
-    redir = await auth_check(request)
-    if redir:
-        return redir
-
-    did = settings.default_dealership_id
+    did = await auth_check(request)
+    if not isinstance(did, int):
+        return did
     today = datetime.now(UTC).date()
     today_start = datetime.combine(today, datetime.min.time())
 
@@ -164,18 +162,18 @@ async def dashboard(request: Request, db: AsyncSession = Depends(get_db)):
 
 @router.get("/test", response_class=HTMLResponse)
 async def test_chat_page(request: Request):
-    redir = await auth_check(request)
-    if redir:
-        return redir
+    did = await auth_check(request)
+    if not isinstance(did, int):
+        return did
     return templates.TemplateResponse("admin/test_chat.html", {"request": request})
 
 
 @router.post("/test/send")
 async def test_chat_send(request: Request, db: AsyncSession = Depends(get_db)):
     """Process test message through conversation engine."""
-    session_cookie = request.cookies.get("admin_session")
-    if not await is_authenticated(session_cookie):
-        return {"error": "not_authenticated"}
+    did = await auth_check(request)
+    if not isinstance(did, int):
+        return did
 
     body = await request.json()
     phone = body.get("phone", "+5491100000000")
@@ -188,7 +186,7 @@ async def test_chat_send(request: Request, db: AsyncSession = Depends(get_db)):
     try:
         result = await process_message(
             session=db,
-            dealership_id=settings.default_dealership_id,
+            dealership_id=did,
             phone=phone,
             text=text,
             channel=channel,
@@ -205,11 +203,9 @@ async def test_chat_send(request: Request, db: AsyncSession = Depends(get_db)):
 
 @router.get("/metrics", response_class=HTMLResponse)
 async def metrics_page(request: Request, db: AsyncSession = Depends(get_db)):
-    redir = await auth_check(request)
-    if redir:
-        return redir
-
-    did = settings.default_dealership_id
+    did = await auth_check(request)
+    if not isinstance(did, int):
+        return did
     today = datetime.now(UTC).date()
     today_start = datetime.combine(today, datetime.min.time())
 
