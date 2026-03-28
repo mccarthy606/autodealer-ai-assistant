@@ -8,7 +8,7 @@ from sqlalchemy.orm import sessionmaker, Session
 
 from src.adapters.whatsapp_cloud import WhatsAppCloudAdapter
 from src.config import settings
-from src.db.models import Conversation
+from src.db.models import Conversation, Dealership
 from src.db.session import sync_engine  # reuse shared engine — do NOT create a second one
 from src.tasks.celery_app import celery_app
 
@@ -166,8 +166,6 @@ def send_followups(self) -> dict:
     skipped = 0
     errors = 0
 
-    wa_adapter = WhatsAppCloudAdapter()
-
     with _SyncSession() as session:
         candidates = _get_candidates(session, now)
         logger.info("followup_task: %d candidates loaded", len(candidates))
@@ -178,6 +176,12 @@ def send_followups(self) -> dict:
                 if not should_send:
                     skipped += 1
                     continue
+
+                # Load dealership for this conversation to get credentials (per D-03)
+                dealer = session.get(Dealership, conv.dealership_id)
+                wa_phone_id = (dealer.whatsapp_phone_number_id if dealer else None) or settings.whatsapp_phone_number_id
+                wa_token = (dealer.whatsapp_access_token if dealer else None) or settings.whatsapp_cloud_token
+                wa_adapter = WhatsAppCloudAdapter(phone_number_id=wa_phone_id, token=wa_token)
 
                 # Build template payload
                 if followup_num == 1:

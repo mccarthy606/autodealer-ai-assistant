@@ -7,6 +7,7 @@ from typing import Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.config import settings
 from src.db.models import Conversation, Dealership, InventoryItem, Message, MessageDirectionEnum, Event
 from src.adapters.whatsapp_cloud import WhatsAppCloudAdapter
 from src.adapters.mercadolibre import MercadoLibreAdapter
@@ -64,7 +65,10 @@ async def handle_ml_inquiry(
         customer_name = buyer.get("name", "")
         customer_phone = buyer["phone"]
 
-        wa_adapter = WhatsAppCloudAdapter()
+        # Per D-03: use dealership's own WABA token, fall back to settings
+        wa_phone_number_id = (dealer.whatsapp_phone_number_id if dealer else None) or settings.whatsapp_phone_number_id
+        wa_token = (dealer.whatsapp_access_token if dealer else None) or settings.whatsapp_cloud_token
+        wa_adapter = WhatsAppCloudAdapter(phone_number_id=wa_phone_number_id, token=wa_token)
         components = [
             {
                 "type": "body",

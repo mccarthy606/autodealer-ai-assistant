@@ -7,6 +7,8 @@ from decimal import Decimal
 from typing import Any, Optional
 
 import httpx
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.config import settings
 from src.adapters.base import ChannelAdapter
@@ -578,6 +580,21 @@ def parse_incoming_question(payload: dict) -> Optional[dict]:
         }
     except Exception:
         return None
+
+
+async def get_dealership_by_ml(
+    db: AsyncSession, ml_user_id: str
+) -> Optional["Dealership"]:
+    """
+    Look up a Dealership by ml_user_id.
+    Returns None if no dealership configured for that user_id.
+    """
+    from src.db.models import Dealership
+    if not ml_user_id:
+        return None
+    stmt = select(Dealership).where(Dealership.ml_user_id == str(ml_user_id))
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none()
 
 
 def parse_ml_url(url: str) -> Optional[dict]:

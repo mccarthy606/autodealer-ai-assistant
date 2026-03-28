@@ -4,6 +4,8 @@ import logging
 from typing import Any, Optional
 
 import httpx
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.config import settings
 from src.adapters.base import ChannelAdapter
@@ -16,9 +18,13 @@ GRAPH_API_URL = "https://graph.facebook.com/v18.0"
 class WhatsAppCloudAdapter(ChannelAdapter):
     """WhatsApp Cloud API adapter. Works in mock mode if tokens are not set."""
 
-    def __init__(self):
-        self.token = settings.whatsapp_cloud_token
-        self.phone_number_id = settings.whatsapp_phone_number_id
+    def __init__(
+        self,
+        phone_number_id: Optional[str] = None,
+        token: Optional[str] = None,
+    ):
+        self.phone_number_id = phone_number_id or settings.whatsapp_phone_number_id
+        self.token = token or settings.whatsapp_cloud_token
         self.is_configured = bool(self.token and self.phone_number_id)
 
     async def send_text(self, to: str, text: str) -> dict:
@@ -93,10 +99,25 @@ class WhatsAppCloudAdapter(ChannelAdapter):
             return {"error": str(e)}
 
 
-def parse_incoming_message(payload: dict) -> Optional[tuple[str, str, Optional[str]]]:
+async def get_dealership_by_wa(
+    db: AsyncSession, phone_number_id: str
+) -> Optional["Dealership"]:
+    """
+    Look up a Dealership by whatsapp_phone_number_id.
+    Returns None if no dealership is configured for that phone_number_id.
+    """
+    from src.db.models import Dealership
+    if not phone_number_id:
+        return None
+    stmt = select(Dealership).where(Dealership.whatsapp_phone_number_id == phone_number_id)
+    result = await db.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+def parse_incoming_message(payload: dict) -> Optional[tuple[str, str, Optional[str], Optional[str]]]:
     """
     Parse incoming Meta WhatsApp Cloud webhook payload.
-    Returns (phone, text, wamid) or None.
+    Returns (phone, text, wamid, phone_number_id) or None.
     """
     try:
         entry = payload.get("entry", [{}])[0]
@@ -122,8 +143,9 @@ def parse_incoming_message(payload: dict) -> Optional[tuple[str, str, Optional[s
         else:
             text = ""
         wamid = msg.get("id")
+        phone_number_id = value.get("metadata", {}).get("phone_number_id")
         if phone and text:
-            return phone, text, wamid
+            return phone, text, wamid, phone_number_id
         return None
     except (IndexError, KeyError):
         return None

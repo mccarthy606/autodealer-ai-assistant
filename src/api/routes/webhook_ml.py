@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.deps import get_db
 from src.config import settings
-from src.adapters.mercadolibre import MercadoLibreAdapter, parse_incoming_question
+from src.adapters.mercadolibre import MercadoLibreAdapter, parse_incoming_question, get_dealership_by_ml
 from src.services.outbound_service import handle_ml_inquiry
 
 router = APIRouter(prefix="/webhooks/mercadolibre", tags=["webhooks-ml"])
@@ -34,7 +34,17 @@ async def receive_ml_notification(
         return {"status": "ok", "message": "not a question notification"}
 
     question_id = parsed["question_id"]
+    seller_id = str(parsed.get("user_id") or "")
     logger.info("ML question received: %s", question_id)
+
+    # Route to dealership by ML user_id (per D-13)
+    dealership_id = settings.default_dealership_id  # fallback
+    if seller_id:
+        dealer = await get_dealership_by_ml(db, seller_id)
+        if dealer:
+            dealership_id = dealer.id
+        else:
+            logger.info("No dealership for ml_user_id=%s, using default", seller_id)
 
     # Fetch the actual question data from ML API
     adapter = MercadoLibreAdapter()
@@ -64,7 +74,7 @@ async def receive_ml_notification(
     try:
         outbound_result = await handle_ml_inquiry(
             session=db,
-            dealership_id=settings.default_dealership_id,
+            dealership_id=dealership_id,
             question_id=question_id,
             item_id=item_id,
             from_user_id=from_user,
