@@ -27,6 +27,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 
 from src.db.session import Base
+from src.db.credential_type import EncryptedStr
 
 
 # --- Enums ---
@@ -94,9 +95,9 @@ class Dealership(Base):
     phone = Column(String(64))
     business_hours = Column(Text)
     whatsapp_phone_number_id = Column(String(64))
-    whatsapp_verify_token = Column(String(128))
+    whatsapp_verify_token = Column(EncryptedStr(256))
     ml_user_id = Column(String(64))
-    whatsapp_access_token = Column(String(512), nullable=True)
+    whatsapp_access_token = Column(EncryptedStr(768), nullable=True)
     admin_username = Column(String(128), nullable=True)
     admin_password_hash = Column(String(255), nullable=True)
     created_at = Column(DateTime, default=_utcnow)
@@ -106,11 +107,11 @@ class Dealership(Base):
     plan = Column(String(64), nullable=True)
     trial_ends_at = Column(DateTime, nullable=True)
     grace_period_ends_at = Column(DateTime, nullable=True)
-    whatsapp_webhook_secret = Column(String(128), nullable=True)
-    ml_access_token = Column(String(512), nullable=True)
-    ml_refresh_token = Column(String(512), nullable=True)
+    whatsapp_webhook_secret = Column(EncryptedStr(256), nullable=True)
+    ml_access_token = Column(EncryptedStr(768), nullable=True)
+    ml_refresh_token = Column(EncryptedStr(768), nullable=True)
     ml_app_id = Column(String(64), nullable=True)
-    ml_client_secret = Column(String(128), nullable=True)
+    ml_client_secret = Column(EncryptedStr(256), nullable=True)
 
     inventory_items = relationship("InventoryItem", back_populates="dealership")
     conversations = relationship("Conversation", back_populates="dealership")
