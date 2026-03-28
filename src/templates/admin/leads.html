@@ -1,8 +1,9 @@
 {% extends "base.html" %}
 {% block title %}Leads{% endblock %}
 {% block content %}
-<div class="page-header">
+<div class="page-header" style="display:flex; justify-content:space-between; align-items:center;">
     <h1>Leads</h1>
+    <a href="/admin/ui/leads/export-csv" class="btn btn-secondary">Exportar CSV</a>
 </div>
 
 <form class="filters-bar" method="get" action="/admin/ui/leads">
