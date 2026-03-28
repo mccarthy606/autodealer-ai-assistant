@@ -1,6 +1,50 @@
 {% extends "base.html" %}
 {% block title %}Cars{% endblock %}
 {% block content %}
+<!-- ML Sync Button (D-06, D-08, D-09) -->
+{% if dealer and dealer.ml_access_token %}
+<div class="card" style="margin-bottom: 1.5rem; border-left: 4px solid #22c55e;">
+    <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+        <div>
+            <strong>Sincronización MercadoLibre</strong>
+            {% if dealer.ml_last_sync_at %}
+            <div style="font-size:0.85rem; color: var(--text-muted); margin-top:2px;">
+                Último sync: {{ dealer.ml_last_sync_added or 0 }} nuevos,
+                {{ dealer.ml_last_sync_updated or 0 }} actualizados,
+                {{ dealer.ml_last_sync_sold or 0 }} marcados vendidos
+            </div>
+            {% else %}
+            <div style="font-size:0.85rem; color: var(--text-muted); margin-top:2px;">Nunca sincronizado</div>
+            {% endif %}
+        </div>
+        <button id="btn-ml-sync" class="btn btn-primary" onclick="triggerMlSync()">
+            Sincronizar desde MercadoLibre
+        </button>
+        <span id="ml-sync-status" style="font-size:0.85rem; display:none;"></span>
+    </div>
+</div>
+<script>
+function triggerMlSync() {
+    var btn = document.getElementById('btn-ml-sync');
+    var status = document.getElementById('ml-sync-status');
+    btn.disabled = true;
+    btn.textContent = 'Sincronizando...';
+    status.style.display = 'inline';
+    status.textContent = '';
+    fetch('/admin/ui/cars/sync-ml', {method: 'POST', headers: {'Content-Type': 'application/json'}})
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            status.textContent = data.message || 'Iniciado';
+            setTimeout(function() { window.location.reload(); }, 3000);
+        })
+        .catch(function(err) {
+            status.textContent = 'Error: ' + err;
+            btn.disabled = false;
+            btn.textContent = 'Sincronizar desde MercadoLibre';
+        });
+}
+</script>
+{% endif %}
 <div class="page-header">
     <h1>Cars</h1>
     <div class="page-actions">

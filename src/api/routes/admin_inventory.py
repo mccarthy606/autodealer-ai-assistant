@@ -7,14 +7,14 @@ from datetime import UTC, datetime
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.deps import get_db
 from src.api.routes.admin_common import auth_check, templates
 from src.db.models import (
-    InventoryItem, Event,
+    Dealership, InventoryItem, Event,
     StatusEnum, ConditionEnum,
 )
 from src.services.responder import format_car_whatsapp_message
@@ -33,6 +33,10 @@ async def cars_list(request: Request, db: AsyncSession = Depends(get_db)):
     q = request.query_params.get("q", "").strip()
     status_filter = request.query_params.get("status", "").strip()
     condition_filter = request.query_params.get("condition", "").strip()
+
+    dealer_stmt = select(Dealership).where(Dealership.id == did)
+    dealer_result = await db.execute(dealer_stmt)
+    dealer = dealer_result.scalar_one_or_none()
 
     stmt = select(InventoryItem).where(InventoryItem.dealership_id == did)
     if q:
@@ -60,7 +64,20 @@ async def cars_list(request: Request, db: AsyncSession = Depends(get_db)):
         "request": request,
         "items": items,
         "filters": {"q": q, "status": status_filter, "condition": condition_filter},
+        "dealer": dealer,
     })
+
+
+# --- ML Sync ---
+
+@router.post("/cars/sync-ml")
+async def cars_sync_ml(request: Request):
+    did = await auth_check(request)
+    if not isinstance(did, int):
+        return did
+    from src.tasks.import_tasks import sync_ml_inventory_all_dealers
+    sync_ml_inventory_all_dealers.delay()
+    return JSONResponse({"status": "ok", "message": "Sincronizando..."})
 
 
 # --- Car Create ---
@@ -172,7 +189,10 @@ async def car_edit(car_id: int, request: Request, db: AsyncSession = Depends(get
     if not isinstance(did, int):
         return did
 
-    stmt = select(InventoryItem).where(InventoryItem.id == car_id)
+    stmt = select(InventoryItem).where(
+        InventoryItem.id == car_id,
+        InventoryItem.dealership_id == did,
+    )
     r = await db.execute(stmt)
     car = r.scalar_one_or_none()
     if not car:
@@ -191,7 +211,7 @@ async def car_update(car_id: int, request: Request, db: AsyncSession = Depends(g
     if not isinstance(did, int):
         return did
 
-    stmt = select(InventoryItem).where(InventoryItem.id == car_id)
+    stmt = select(InventoryItem).where(InventoryItem.id == car_id, InventoryItem.dealership_id == did)
     r = await db.execute(stmt)
     car = r.scalar_one_or_none()
     if not car:
@@ -233,7 +253,7 @@ async def car_mark_sold(car_id: int, request: Request, db: AsyncSession = Depend
     if not isinstance(did, int):
         return did
 
-    stmt = select(InventoryItem).where(InventoryItem.id == car_id)
+    stmt = select(InventoryItem).where(InventoryItem.id == car_id, InventoryItem.dealership_id == did)
     r = await db.execute(stmt)
     car = r.scalar_one_or_none()
     if car:
@@ -248,7 +268,7 @@ async def car_duplicate(car_id: int, request: Request, db: AsyncSession = Depend
     if not isinstance(did, int):
         return did
 
-    stmt = select(InventoryItem).where(InventoryItem.id == car_id)
+    stmt = select(InventoryItem).where(InventoryItem.id == car_id, InventoryItem.dealership_id == did)
     r = await db.execute(stmt)
     car = r.scalar_one_or_none()
     if not car:
