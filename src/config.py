@@ -47,6 +47,8 @@ class Settings(BaseSettings):
 
     # Monitoring
     sentry_dsn: str = ""                         # Sentry DSN — leave empty to disable
+    sentry_environment: str = "production"       # Sentry environment tag
+    sentry_release: str = ""                     # Sentry release tag — defaults to app version
 
 
 settings = Settings()

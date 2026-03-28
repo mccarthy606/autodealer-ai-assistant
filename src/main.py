@@ -24,8 +24,8 @@ logger = logging.getLogger(__name__)
 if settings.sentry_dsn:
     sentry_sdk.init(
         dsn=settings.sentry_dsn,
-        environment="production",
-        release="1.0.0",
+        environment=settings.sentry_environment,
+        release=settings.sentry_release or "1.0.0",
         traces_sample_rate=0.1,
     )
 
@@ -124,7 +124,7 @@ async def health():
     try:
         from src.tasks.celery_app import celery_app
         insp = celery_app.control.inspect(timeout=1)
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         ping_result = await loop.run_in_executor(None, insp.ping)
         if not ping_result:
             result["celery"] = "timeout"
