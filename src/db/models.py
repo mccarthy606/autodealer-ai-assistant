@@ -21,7 +21,7 @@ from sqlalchemy import (
     String,
     Text,
     Boolean,
-    text,
+    text as sql_text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
@@ -209,7 +209,7 @@ class Message(Base):
             "conversation_id",
             "wamid",
             unique=True,
-            postgresql_where=text("wamid IS NOT NULL"),
+            postgresql_where=sql_text("wamid IS NOT NULL"),
         ),
     )
 
