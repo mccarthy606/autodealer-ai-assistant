@@ -23,5 +23,9 @@ celery_app.conf.update(
             # the research doc used a provisional name; the implementation uses send_followups)
             "schedule": 900,  # 15 minutes in seconds (per D-01)
         },
+        "ml-inventory-sync-every-4h": {
+            "task": "src.tasks.import_tasks.sync_ml_inventory_all_dealers",
+            "schedule": 14400,  # 4 hours
+        },
     },
 )
