@@ -38,19 +38,28 @@
     </div>
 
     <div class="card">
-        <h3>Bot behavior</h3>
-        <p class="hint">These settings are configured via environment variables (.env file).</p>
-        <div class="info-list">
-            <div class="info-item">
-                <span>LLM enabled</span>
-                <strong class="{% if settings.llm_enabled %}text-success{% else %}text-muted{% endif %}">
-                    {{ 'Yes' if settings.llm_enabled else 'No (deterministic mode)' }}
-                </strong>
-            </div>
-            <div class="info-item">
-                <span>Follow-ups enabled</span>
-                <strong>{{ 'Yes' if settings.followups_enabled else 'No' }}</strong>
-            </div>
+        <h3>Inteligencia Artificial</h3>
+        <div class="form-group">
+            <label for="llm_api_key">OpenAI API Key</label>
+            <input type="password" name="llm_api_key" id="llm_api_key"
+                   placeholder="{% if dealer_llm_api_key_set %}••••••••••••••••{% else %}sk-...{% endif %}"
+                   autocomplete="off">
+            <small class="hint">{% if dealer_llm_api_key_set %}Clave guardada — dejá en blanco para no cambiarla{% else %}Ingresá tu clave de OpenAI{% endif %}</small>
+        </div>
+        <div class="form-group">
+            <label for="llm_model">Modelo</label>
+            <input type="text" name="llm_model" id="llm_model"
+                   value="{{ dealer_llm_model }}"
+                   placeholder="gpt-4o-mini">
+            <small class="hint">Dejá en blanco para usar gpt-4o-mini por defecto</small>
+        </div>
+        <div class="form-group">
+            <label class="checkbox-label">
+                <input type="checkbox" name="llm_enabled"
+                       {% if dealer_llm_enabled or (dealer_llm_enabled is none and llm_enabled) %}checked{% endif %}>
+                Activar IA
+            </label>
+            <small class="hint">Cuando está activo, el bot usa OpenAI para generar respuestas naturales</small>
         </div>
     </div>
 

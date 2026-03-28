@@ -27,7 +27,7 @@ async def settings_page(request: Request, db: AsyncSession = Depends(get_db)):
     r = await db.execute(stmt)
     dealer = r.scalar_one_or_none()
 
-    saved = request.query_params.get("saved")
+    saved = request.query_params.get("saved") == "1"
 
     return templates.TemplateResponse("admin/settings.html", {
         "request": request,
@@ -35,6 +35,9 @@ async def settings_page(request: Request, db: AsyncSession = Depends(get_db)):
         "llm_enabled": settings.llm_enabled,
         "followups_enabled": settings.followups_enabled,
         "saved": saved,
+        "dealer_llm_api_key_set": bool(dealer and dealer.llm_api_key),
+        "dealer_llm_model": (dealer.llm_model or "") if dealer else "",
+        "dealer_llm_enabled": dealer.llm_enabled if dealer else None,
     })
 
 
@@ -53,7 +56,12 @@ async def settings_save(request: Request, db: AsyncSession = Depends(get_db)):
         dealer.business_hours = (form.get("business_hours") or "").strip() or None
         dealer.name = (form.get("name") or dealer.name).strip()
         dealer.default_language = (form.get("default_language") or "es-AR").strip()
-        await db.commit()
+        # LLM config (D-08) — blank api_key keeps existing (credentials not echoed back)
+        if form.get("llm_api_key"):
+            dealer.llm_api_key = form["llm_api_key"].strip()
+        dealer.llm_model = (form.get("llm_model") or "").strip() or None
+        # HTML checkbox: key present in form = checked = True, absent = False
+        dealer.llm_enabled = "llm_enabled" in form
 
     return RedirectResponse(url="/admin/ui/settings?saved=1", status_code=302)
 
@@ -85,7 +93,7 @@ async def integrations_page(request: Request, db: AsyncSession = Depends(get_db)
     r2 = await db.execute(stmt2)
     ml_cars = r2.scalars().all()
 
-    saved = request.query_params.get("saved")
+    saved = request.query_params.get("saved") == "1"
 
     return templates.TemplateResponse("admin/integrations.html", {
         "request": request,
@@ -129,7 +137,6 @@ async def integrations_save(request: Request, db: AsyncSession = Depends(get_db)
             dealer.ml_client_secret = form["ml_client_secret"].strip()
         if form.get("ml_user_id"):
             dealer.ml_user_id = form["ml_user_id"].strip()
-        await db.commit()
 
     return RedirectResponse(url="/admin/ui/integrations?saved=1", status_code=302)
 
