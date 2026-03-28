@@ -1,6 +1,7 @@
 """Admin authentication — Redis sessions + bcrypt passwords."""
 
 import hashlib
+import json
 import logging
 import secrets
 from typing import Optional
@@ -17,8 +18,8 @@ logger = logging.getLogger(__name__)
 ADMIN_COOKIE = "admin_session"
 SESSION_LENGTH = 24  # bytes
 
-# Fallback when Redis unavailable
-_admin_sessions: set[str] = set()
+# Fallback when Redis unavailable: maps token_hash -> dealership_id
+_admin_sessions: dict[str, int] = {}
 
 
 def _check_password(password: str) -> bool:
@@ -45,15 +46,19 @@ def _hash_token(token: str) -> str:
     return hashlib.sha256(token.encode()).hexdigest()
 
 
-async def create_session(response: Response) -> None:
-    """Create admin session in Redis (or fallback to in-memory)."""
+async def create_session(response: Response, dealership_id: int) -> None:
+    """Create admin session in Redis (or fallback to in-memory).
+
+    Session value is stored as JSON: {"dealership_id": N}.
+    """
     token = _make_token()
     token_hash = _hash_token(token)
     r = await get_redis()
     if r:
-        await r.set(f"admin:session:{token_hash}", "1", ex=86400)
+        value = json.dumps({"dealership_id": dealership_id})
+        await r.set(f"admin:session:{token_hash}", value, ex=86400)
     else:
-        _admin_sessions.add(token_hash)
+        _admin_sessions[token_hash] = dealership_id
     secure = "localhost" not in settings.database_url
     response.set_cookie(
         ADMIN_COOKIE, token, httponly=True, samesite="lax",
@@ -61,17 +66,33 @@ async def create_session(response: Response) -> None:
     )
 
 
+async def get_session_dealership_id(session_token: Optional[str]) -> Optional[int]:
+    """Return dealership_id from session, or None if invalid/missing."""
+    if not session_token:
+        return None
+    token_hash = _hash_token(session_token)
+    r = await get_redis()
+    if r:
+        raw = await r.get(f"admin:session:{token_hash}")
+        if raw is None:
+            return None
+        # raw may be bytes or str depending on redis client decode setting
+        if isinstance(raw, bytes):
+            raw = raw.decode("utf-8")
+        try:
+            return json.loads(raw)["dealership_id"]
+        except (json.JSONDecodeError, KeyError, TypeError):
+            # Backward compat: old sessions stored plain "1"
+            return 1
+    return _admin_sessions.get(token_hash)
+
+
 async def is_authenticated(session: Optional[str] = None) -> bool:
     """Check if session token is valid in Redis (or fallback)."""
     if not settings.admin_password and not settings.admin_password_hash:
         return True
-    if not session:
-        return False
-    token_hash = _hash_token(session)
-    r = await get_redis()
-    if r:
-        return await r.exists(f"admin:session:{token_hash}") > 0
-    return token_hash in _admin_sessions
+    result = await get_session_dealership_id(session)
+    return result is not None
 
 
 def clear_session(response: Response) -> None:
@@ -79,10 +100,10 @@ def clear_session(response: Response) -> None:
 
 
 async def remove_session(session: Optional[str]) -> None:
-    """Remove session from Redis (and fallback set)."""
+    """Remove session from Redis (and fallback dict)."""
     if session:
         token_hash = _hash_token(session)
         r = await get_redis()
         if r:
             await r.delete(f"admin:session:{token_hash}")
-        _admin_sessions.discard(token_hash)
+        _admin_sessions.pop(token_hash, None)

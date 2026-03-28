@@ -10,13 +10,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.deps import get_db
 from src.api.rate_limit import check_rate_limit
+import bcrypt
+from sqlalchemy import select
+
 from src.api.auth import (
     create_session, clear_session, remove_session, is_authenticated, _check_password,
 )
 from src.api.routes.admin_common import auth_check, templates
 from src.config import settings
 from src.db.models import (
-    InventoryItem, Lead, Conversation, Event,
+    Dealership, InventoryItem, Lead, Conversation, Event,
     StatusEnum,
 )
 from src.services.conversation_engine import process_message
@@ -36,7 +39,7 @@ async def login_page(request: Request):
 
 
 @router.post("/login")
-async def login_submit(request: Request):
+async def login_submit(request: Request, db: AsyncSession = Depends(get_db)):
     # Rate limit: 5 attempts per 60s per IP (per D-08)
     client_ip = request.client.host if request.client else "unknown"
     allowed, retry_after = await check_rate_limit(
@@ -48,14 +51,34 @@ async def login_submit(request: Request):
             status_code=429,
             headers={"Retry-After": str(retry_after)},
         )
-    if not settings.admin_password and not settings.admin_password_hash:
-        return RedirectResponse(url="/admin/ui", status_code=302)
+
     form = await request.form()
-    password = form.get("password", "")
+    username = str(form.get("username", "")).strip()
+    password = str(form.get("password", "")).strip()
+
+    # Try per-dealership login first (D-05)
+    if username:
+        stmt = select(Dealership).where(Dealership.admin_username == username)
+        result = await db.execute(stmt)
+        dealer = result.scalar_one_or_none()
+        if dealer and dealer.admin_password_hash and bcrypt.checkpw(
+            password.encode("utf-8"), dealer.admin_password_hash.encode("utf-8")
+        ):
+            resp = RedirectResponse(url="/admin/ui", status_code=302)
+            await create_session(resp, dealer.id)
+            return resp
+
+    # Superadmin fallback: settings-level password, dealership_id=default (D-08)
+    if not settings.admin_password and not settings.admin_password_hash:
+        resp = RedirectResponse(url="/admin/ui", status_code=302)
+        await create_session(resp, settings.default_dealership_id)
+        return resp
+
     if _check_password(password):
         resp = RedirectResponse(url="/admin/ui", status_code=302)
-        await create_session(resp)
+        await create_session(resp, settings.default_dealership_id)
         return resp
+
     return RedirectResponse(url="/admin/ui/login?error=1", status_code=302)
 
 

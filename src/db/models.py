@@ -96,6 +96,9 @@ class Dealership(Base):
     whatsapp_phone_number_id = Column(String(64))
     whatsapp_verify_token = Column(String(128))
     ml_user_id = Column(String(64))
+    whatsapp_access_token = Column(String(512), nullable=True)
+    admin_username = Column(String(128), nullable=True)
+    admin_password_hash = Column(String(255), nullable=True)
     created_at = Column(DateTime, default=_utcnow)
 
     inventory_items = relationship("InventoryItem", back_populates="dealership")
