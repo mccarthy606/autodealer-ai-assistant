@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Milestone complete
-stopped_at: Completed 10-03-PLAN.md
-last_updated: "2026-03-28T15:50:45.710Z"
+status: v1.0 complete — planning v1.1
+stopped_at: All 10 phases complete. 201 tests passing. Ready for new phases.
+last_updated: "2026-03-28T18:00:00.000Z"
 progress:
   total_phases: 10
   completed_phases: 10
@@ -62,6 +62,7 @@ Plan: Not started
 | Phase 10 P01 | 8min | 2 tasks | 2 files |
 | Phase 10 P03 | 5min | 1 tasks | 1 files |
 | Phase 10 P02 | 8min | 2 tasks | 2 files |
+| Phase 11 P01 | 5min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -107,6 +108,7 @@ Recent decisions affecting current work:
 - [Phase 10-01]: Migration 008 adds exactly 5 columns (not whatsapp_access_token — already in 006): whatsapp_webhook_secret, ml_access_token, ml_refresh_token, ml_app_id, ml_client_secret
 - [Phase 10-01]: All 5 new credential columns are nullable=True — dealers configure post-onboarding, system works in unconfigured state
 - [Phase 10]: [Phase 10-03]: settings.default_dealership_id fallback in WA webhook; logger.warning on double-miss; Dealership added to model import
+- [Phase 11-01]: Lazy import of get_valid_token inside sync_all_listings() matches existing _ensure_token() pattern; pagination exits on empty results OR offset >= total
 
 ### Pending Todos
 
@@ -120,6 +122,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-28T15:42:59.582Z
-Stopped at: Completed 10-03-PLAN.md
+Last session: 2026-03-28T18:30:00.000Z
+Stopped at: Completed 11-01-PLAN.md
 Resume file: None
