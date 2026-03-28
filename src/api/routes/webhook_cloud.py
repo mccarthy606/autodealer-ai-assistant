@@ -16,6 +16,7 @@ from src.adapters.whatsapp_cloud import (
     WhatsAppCloudAdapter, parse_incoming_message, verify_webhook, get_dealership_by_wa
 )
 from src.db.models import Message
+from src.services.billing import is_subscription_active
 from src.services.conversation_engine import process_message
 
 router = APIRouter(prefix="/webhooks/whatsapp_cloud", tags=["webhooks-whatsapp"])
@@ -77,6 +78,14 @@ async def receive_whatsapp_message(
     if dealer is None:
         # Unknown phone_number_id — return 200 silently (per D-12, never 4xx to Meta)
         logger.info("No dealership for phone_number_id=%s, ignoring", phone_number_id)
+        return {"status": "ok"}
+
+    if not is_subscription_active(dealer):
+        logger.info(
+            "Subscription inactive for dealership=%d (status=%s), dropping WA message",
+            dealer.id,
+            dealer.subscription_status,
+        )
         return {"status": "ok"}
 
     dealership_id = dealer.id

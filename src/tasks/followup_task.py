@@ -8,6 +8,7 @@ from sqlalchemy.orm import sessionmaker, Session
 
 from src.adapters.whatsapp_cloud import WhatsAppCloudAdapter
 from src.config import settings
+from src.services.billing import is_subscription_active
 from src.db.models import Conversation, Dealership
 from src.db.session import sync_engine  # reuse shared engine — do NOT create a second one
 from src.tasks.celery_app import celery_app
@@ -179,6 +180,9 @@ def send_followups(self) -> dict:
 
                 # Load dealership for this conversation to get credentials (per D-03)
                 dealer = session.get(Dealership, conv.dealership_id)
+                if not is_subscription_active(dealer):
+                    skipped += 1
+                    continue
                 wa_phone_id = (dealer.whatsapp_phone_number_id if dealer else None) or settings.whatsapp_phone_number_id
                 wa_token = (dealer.whatsapp_access_token if dealer else None) or settings.whatsapp_cloud_token
                 wa_adapter = WhatsAppCloudAdapter(phone_number_id=wa_phone_id, token=wa_token)
