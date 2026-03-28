@@ -10,6 +10,7 @@ from datetime import UTC, datetime
 from typing import Any, Optional
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.models import (
@@ -428,18 +429,74 @@ async def process_message(
         result.text = responder.build_handoff_response(handoff_reason, lang)
         await _do_handoff(session, conv, state, handoff_reason, dealership_id, result)
 
-    # 10b. Optional LLM rephrasing (per D-02: when LLM_ENABLED=true, rephrase deterministic response)
+    # 10b. LLM full response (D-02: generate_response takes over when llm_enabled=True)
     if result.text and result.mode == "bot":
         try:
-            from src.config import settings
-            if settings.llm_enabled:
-                from src.services.llm_service import LLMService
-                llm = LLMService()
-                rephrased = await llm.rephrase(result.text, lang)
-                if rephrased:
-                    result.text = rephrased
-        except Exception as e:
-            logger.warning("LLM rephrase failed, using deterministic: %s", e)
+            from src.config import settings as _settings
+            from src.db.models import Dealership as _Dealership
+
+            # Fetch dealer row for per-dealer config (D-04)
+            _dealer_stmt = select(_Dealership).where(_Dealership.id == dealership_id)
+            _dealer_row = (await session.execute(_dealer_stmt)).scalar_one_or_none()
+
+            # D-06: dealer.llm_enabled overrides global when not None
+            _effective_llm = (
+                _dealer_row.llm_enabled
+                if _dealer_row is not None and _dealer_row.llm_enabled is not None
+                else _settings.llm_enabled
+            )
+
+            # D-05: dealer key first, then global key; if neither set, skip LLM
+            _effective_key = (
+                (_dealer_row.llm_api_key or "") if _dealer_row else ""
+            ) or _settings.openai_api_key
+
+            if _effective_llm and _effective_key:
+                from src.services.llm_service import LLMService, ToolsExecutor
+                from openai import AsyncOpenAI
+
+                # Build LLM client with effective key and model
+                _llm = LLMService()
+                _llm.client = AsyncOpenAI(api_key=_effective_key)
+                _llm.model = (
+                    (_dealer_row.llm_model or "") if _dealer_row else ""
+                ) or _settings.openai_model
+
+                # D-07: last 10 messages as conversation history
+                _hist_stmt = (
+                    select(Message)
+                    .where(Message.conversation_id == conv.id)
+                    .order_by(Message.id.desc())
+                    .limit(10)
+                )
+                _hist_rows = (await session.execute(_hist_stmt)).scalars().all()
+                _history = [
+                    {"direction": m.direction.value, "text": m.text or ""}
+                    for m in reversed(_hist_rows)
+                ]
+
+                # Wire ToolsExecutor — callbacks are optional notifications;
+                # ToolsExecutor handles lead creation and handoff internally.
+                _tools_exec = ToolsExecutor(
+                    on_create_lead=None,
+                    on_handoff=None,
+                )
+
+                _llm_text, _llm_state = await _llm.generate_response(
+                    session=session,
+                    dealership_id=dealership_id,
+                    user_message=text,
+                    conversation_history=_history,
+                    state=state,
+                    user_phone=phone,
+                    tools_executor=_tools_exec,
+                )
+                if _llm_text:
+                    result.text = _llm_text
+                    state = _llm_state
+
+        except Exception as _e:
+            logger.warning("LLM generate_response failed, using deterministic: %s", _e)
 
     # 11. Save outbound message (if any)
     if result.text:
@@ -491,8 +548,8 @@ async def _get_or_create_conversation(
             )
             session.add(conv)
             await session.flush()
-        except Exception:
-            # Race condition: another request created it
+        except IntegrityError:
+            # Race condition: another request created the conversation first
             await session.rollback()
             r = await session.execute(stmt)
             conv = r.scalar_one_or_none()
