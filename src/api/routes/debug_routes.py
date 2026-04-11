@@ -2,14 +2,21 @@
 
 from typing import Any, Optional
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Cookie, Depends, HTTPException
 from pydantic import BaseModel
 
+from src.api.auth import is_authenticated
 from src.api.deps import get_db
 from src.config import settings
 from src.services.conversation_engine import process_message
 
-router = APIRouter(prefix="/debug", tags=["debug"])
+
+async def _require_admin(admin_session: str = Cookie(default=None)) -> None:
+    if not await is_authenticated(admin_session):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+
+router = APIRouter(prefix="/debug", tags=["debug"], dependencies=[Depends(_require_admin)])
 
 
 class DebugMessageRequest(BaseModel):

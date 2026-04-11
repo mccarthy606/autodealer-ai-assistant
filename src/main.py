@@ -21,6 +21,16 @@ from src.config import settings
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+import os
+if not settings.admin_password_hash and not settings.admin_password:
+    import warnings
+    warnings.warn(
+        "ADMIN_PASSWORD / ADMIN_PASSWORD_HASH not configured — admin UI is open to everyone! "
+        "Set ADMIN_PASSWORD_HASH in .env (generate: python -c \"import bcrypt; "
+        "print(bcrypt.hashpw(b'yourpassword', bcrypt.gensalt()).decode())\")",
+        stacklevel=1,
+    )
+
 if settings.sentry_dsn:
     sentry_sdk.init(
         dsn=settings.sentry_dsn,
@@ -40,8 +50,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
 )
 
 # Routers
@@ -56,7 +66,6 @@ app.include_router(whatsapp_cloud_router)
 app.include_router(ml_router)
 app.include_router(lemon_router)
 app.include_router(celery_routes.router)
-app.include_router(import_routes.router, prefix="/import")
 app.include_router(import_routes.router, prefix="/admin/import")
 
 # Static files
@@ -67,10 +76,12 @@ if static_dir.exists():
 
 @app.on_event("startup")
 async def startup():
-    """Ensure default dealership exists."""
+    """Initialize connections and ensure default dealership exists."""
     from sqlalchemy import select
     from src.db.session import AsyncSessionLocal
     from src.db.models import Dealership
+    from src.api.rate_limit import get_redis
+    await get_redis()  # Initialize Redis singleton at startup (MEDIUM-3)
 
     async with AsyncSessionLocal() as session:
         try:

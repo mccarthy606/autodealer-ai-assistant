@@ -3,13 +3,13 @@
 from decimal import Decimal
 from typing import Any, Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.deps import get_db
-from src.config import settings
+from src.api.auth import is_authenticated, get_admin_did
 from src.db.models import (
     Dealership,
     InventoryItem,
@@ -21,7 +21,17 @@ from src.db.models import (
     StatusEnum,
     LeadStatusEnum,
 )
-router = APIRouter(prefix="/admin", tags=["admin"])
+async def _require_admin(admin_session: str = Cookie(default=None)) -> None:
+    """Dependency: rejects unauthenticated callers with 401."""
+    if not await is_authenticated(admin_session):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+
+router = APIRouter(
+    prefix="/admin",
+    tags=["admin"],
+    dependencies=[Depends(_require_admin)],
+)
 
 
 # --- Schemas ---
@@ -70,11 +80,10 @@ async def create_dealership(
 @router.get("/inventory")
 async def list_inventory(
     session: AsyncSession = Depends(get_db),
-    dealership_id: Optional[int] = None,
+    did: int = Depends(get_admin_did),
     status: Optional[str] = None,
     limit: int = Query(100, le=500),
 ) -> dict[str, Any]:
-    did = dealership_id or settings.default_dealership_id
     stmt = select(InventoryItem).where(InventoryItem.dealership_id == did)
     if status:
         stmt = stmt.where(InventoryItem.status == StatusEnum(status))
@@ -102,9 +111,8 @@ async def list_inventory(
 async def create_inventory_item(
     data: InventoryItemCreate,
     session: AsyncSession = Depends(get_db),
-    dealership_id: Optional[int] = None,
+    did: int = Depends(get_admin_did),
 ) -> dict[str, Any]:
-    did = dealership_id or settings.default_dealership_id
     item = InventoryItem(
         dealership_id=did,
         brand=data.brand,
@@ -129,11 +137,10 @@ async def create_inventory_item(
 @router.get("/leads")
 async def list_leads(
     session: AsyncSession = Depends(get_db),
-    dealership_id: Optional[int] = None,
+    did: int = Depends(get_admin_did),
     status: Optional[str] = None,
     limit: int = Query(100, le=500),
 ) -> dict[str, Any]:
-    did = dealership_id or settings.default_dealership_id
     stmt = select(Lead).where(Lead.dealership_id == did)
     if status:
         stmt = stmt.where(Lead.status == LeadStatusEnum(status))
@@ -159,8 +166,12 @@ async def list_leads(
 async def get_conversation(
     conv_id: int,
     session: AsyncSession = Depends(get_db),
+    did: int = Depends(get_admin_did),
 ) -> dict[str, Any]:
-    stmt = select(Conversation).where(Conversation.id == conv_id)
+    stmt = select(Conversation).where(
+        Conversation.id == conv_id,
+        Conversation.dealership_id == did,
+    )
     result = await session.execute(stmt)
     conv = result.scalar_one_or_none()
     if not conv:
@@ -189,9 +200,8 @@ async def get_conversation(
 @router.get("/metrics")
 async def get_metrics(
     session: AsyncSession = Depends(get_db),
-    dealership_id: Optional[int] = None,
+    did: int = Depends(get_admin_did),
 ) -> dict[str, Any]:
-    did = dealership_id or settings.default_dealership_id
 
     # Conversations per day (last 7 days)
     from datetime import UTC, datetime, timedelta

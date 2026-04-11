@@ -96,7 +96,7 @@ class TestLemonWebhookEndpoint:
             assert resp.status_code == 401
 
     @pytest.mark.asyncio
-    async def test_no_secret_configured_returns_500(self):
+    async def test_no_secret_configured_returns_200(self):
         with patch("src.api.routes.webhook_lemon.settings") as mock_s:
             mock_s.lemon_squeezy_webhook_secret = ""
             from src.main import app
@@ -107,7 +107,7 @@ class TestLemonWebhookEndpoint:
                     content=VALID_PAYLOAD,
                     headers={"x-signature": sig, "content-type": "application/json"},
                 )
-            assert resp.status_code == 500
+            assert resp.status_code == 200  # 200 to prevent retry storms
 
     @pytest.mark.asyncio
     async def test_invalid_json_returns_400(self):

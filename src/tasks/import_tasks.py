@@ -191,11 +191,37 @@ def sync_ml_inventory_all_dealers() -> dict:
 
 
 def _sync_dealer_inventory(session, dealer) -> dict:
+    """Orchestrate ML sync for one dealer: fetch → upsert → mark-sold → log."""
     from src.adapters.mercadolibre import MercadoLibreAdapter
     start = time.monotonic()
     adapter = MercadoLibreAdapter()
     items: list[dict] = asyncio.run(adapter.sync_all_listings(dealer.id, dealer))
 
+    added, updated, active_ml_ids = _upsert_ml_items(session, dealer.id, items)
+    sold = _mark_sold_items(session, dealer.id, active_ml_ids)
+
+    dealer.ml_last_sync_at = datetime.now(UTC)
+    dealer.ml_last_sync_added = added
+    dealer.ml_last_sync_updated = updated
+    dealer.ml_last_sync_sold = sold
+
+    duration = round(time.monotonic() - start, 1)
+    session.add(Event(
+        dealership_id=dealer.id,
+        type="ml_sync",
+        payload={"added": added, "updated": updated, "sold": sold, "duration_seconds": duration, "errors": []},
+    ))
+
+    logger.info("[ML sync] dealer=%s added=%d updated=%d sold=%d duration=%.1fs", dealer.id, added, updated, sold, duration)
+    return {"added": added, "updated": updated, "sold": sold}
+
+
+def _upsert_ml_items(session, dealer_id: int, items: list[dict]) -> tuple[int, int, set[str]]:
+    """
+    Upsert ML items into InventoryItem. ML always wins on all fields (D-04).
+    Returns (added, updated, active_ml_ids).
+    """
+    from decimal import Decimal as _Dec
     added = updated = 0
     active_ml_ids: set[str] = set()
 
@@ -205,23 +231,21 @@ def _sync_dealer_inventory(session, dealer) -> dict:
             continue
         active_ml_ids.add(ml_id)
 
-        existing = session.query(InventoryItem).filter(
-            InventoryItem.dealership_id == dealer.id,
-            InventoryItem.ml_item_id == ml_id,
-        ).first()
-
         cond_str = item_data.get("condition", "used")
         try:
             condition = ConditionEnum(cond_str)
         except ValueError:
             condition = ConditionEnum.used
 
-        raw_price = item_data.get("price") or 0
-        from decimal import Decimal as _Dec
         try:
-            price = _Dec(str(raw_price))
+            price = _Dec(str(item_data.get("price") or 0))
         except Exception:
             price = _Dec("0")
+
+        existing = session.query(InventoryItem).filter(
+            InventoryItem.dealership_id == dealer_id,
+            InventoryItem.ml_item_id == ml_id,
+        ).first()
 
         if existing:
             existing.price = price
@@ -237,16 +261,13 @@ def _sync_dealer_inventory(session, dealer) -> dict:
             existing.updated_at = datetime.now(UTC)
             updated += 1
         else:
-            year = item_data.get("year") or 2000
-            brand = item_data.get("brand") or "Desconocido"
-            model = item_data.get("model") or "Desconocido"
-            new_item = InventoryItem(
-                dealership_id=dealer.id,
+            session.add(InventoryItem(
+                dealership_id=dealer_id,
                 ml_item_id=ml_id,
                 title=item_data.get("title"),
-                brand=brand,
-                model=model,
-                year=year,
+                brand=item_data.get("brand") or "Desconocido",
+                model=item_data.get("model") or "Desconocido",
+                year=item_data.get("year") or 2000,
                 km=item_data.get("km"),
                 price=price,
                 currency=item_data.get("currency", "ARS"),
@@ -256,13 +277,20 @@ def _sync_dealer_inventory(session, dealer) -> dict:
                 location=item_data.get("location") or None,
                 description=item_data.get("description") or None,
                 source="mercadolibre",
-            )
-            session.add(new_item)
+            ))
             added += 1
 
-    # D-03: Mark sold — CRITICAL: filter source == "mercadolibre" only
+    return added, updated, active_ml_ids
+
+
+def _mark_sold_items(session, dealer_id: int, active_ml_ids: set[str]) -> int:
+    """
+    Mark as sold any ML-sourced items no longer present in active ML listings (D-03).
+    CRITICAL: filters source == "mercadolibre" — CSV/manual items are never touched.
+    Returns count of items marked sold.
+    """
     db_available = session.query(InventoryItem).filter(
-        InventoryItem.dealership_id == dealer.id,
+        InventoryItem.dealership_id == dealer_id,
         InventoryItem.source == "mercadolibre",
         InventoryItem.status == StatusEnum.available,
     ).all()
@@ -273,19 +301,4 @@ def _sync_dealer_inventory(session, dealer) -> dict:
             db_item.status = StatusEnum.sold
             db_item.updated_at = datetime.now(UTC)
             sold += 1
-
-    dealer.ml_last_sync_at = datetime.now(UTC)
-    dealer.ml_last_sync_added = added
-    dealer.ml_last_sync_updated = updated
-    dealer.ml_last_sync_sold = sold
-
-    duration = round(time.monotonic() - start, 1)
-    event = Event(
-        dealership_id=dealer.id,
-        type="ml_sync",
-        payload={"added": added, "updated": updated, "sold": sold, "duration_seconds": duration, "errors": []},
-    )
-    session.add(event)
-
-    logger.info("[ML sync] dealer=%s added=%d updated=%d sold=%d duration=%.1fs", dealer.id, added, updated, sold, duration)
-    return {"added": added, "updated": updated, "sold": sold}
+    return sold

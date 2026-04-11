@@ -24,8 +24,27 @@ async def receive_ml_notification(
     Receive MercadoLibre notifications (questions, orders, etc).
     For questions: trigger outbound flow (WhatsApp first contact) + answer on ML.
     """
+    import hashlib
+    import hmac as _hmac
+    import json as _json
+    import secrets as _sec
+    raw_body = await request.body()
+
+    # Verify HMAC signature when ML_WEBHOOK_SECRET is configured.
+    # When not configured, requests pass through (single-tenant / dev mode).
+    if settings.ml_webhook_secret:
+        sig_header = request.headers.get("x-signature", "")
+        expected = _hmac.new(
+            settings.ml_webhook_secret.encode("utf-8"), raw_body, hashlib.sha256
+        ).hexdigest()
+        if not _sec.compare_digest(expected, sig_header):
+            logger.warning("ML webhook: invalid signature")
+            return {"status": "ok"}
+    else:
+        logger.warning("ML_WEBHOOK_SECRET not configured — skipping signature verification")
+
     try:
-        payload = await request.json()
+        payload = _json.loads(raw_body)
     except Exception:
         return {"status": "error"}
 
@@ -37,14 +56,23 @@ async def receive_ml_notification(
     seller_id = str(parsed.get("user_id") or "")
     logger.info("ML question received: %s", question_id)
 
-    # Route to dealership by ML user_id (per D-13)
-    dealership_id = settings.default_dealership_id  # fallback
+    # Route to dealership by ML user_id (per D-13).
+    # Unknown seller_id rejects silently — prevents spoofed payloads from triggering
+    # outbound WhatsApp sends at the dealership's expense.
+    dealership_id = settings.default_dealership_id  # fallback for single-tenant legacy
     if seller_id:
         dealer = await get_dealership_by_ml(db, seller_id)
         if dealer:
             dealership_id = dealer.id
+        elif settings.default_dealership_id:
+            logger.warning(
+                "ML webhook: unknown seller_id=%s — not matched to any dealership. "
+                "Falling back to default_dealership_id=%s (single-tenant mode).",
+                seller_id, settings.default_dealership_id,
+            )
         else:
-            logger.info("No dealership for ml_user_id=%s, using default", seller_id)
+            logger.warning("ML webhook: unknown seller_id=%s, no default configured, rejecting", seller_id)
+            return {"status": "ok"}
 
     # Fetch the actual question data from ML API
     adapter = MercadoLibreAdapter()

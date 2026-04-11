@@ -458,7 +458,9 @@ async def test_gate_inactive_subscription_drops_message(
             "src.api.routes.webhook_cloud.process_message",
             new=AsyncMock(),
         ) as mock_process,
+        patch("src.api.routes.webhook_cloud.settings") as mock_settings,
     ):
+        mock_settings.whatsapp_webhook_secret = ""  # disable HMAC in tests
         payload = _build_wa_payload(phone_number_id=expired_dealership.whatsapp_phone_number_id)
         resp = await app_client.post(
             "/webhooks/whatsapp_cloud",
@@ -493,7 +495,9 @@ async def test_gate_active_subscription_processes_message(
             "src.api.routes.webhook_cloud.check_rate_limit",
             new=AsyncMock(return_value=(True, 0)),
         ),
+        patch("src.api.routes.webhook_cloud.settings") as mock_settings,
     ):
+        mock_settings.whatsapp_webhook_secret = ""  # disable HMAC in tests
         payload = _build_wa_payload(phone_number_id=active_dealership.whatsapp_phone_number_id)
         resp = await app_client.post(
             "/webhooks/whatsapp_cloud",
@@ -553,6 +557,7 @@ def test_followup_skips_inactive_dealership(
             "src.tasks.followup_task.WhatsAppCloudAdapter.send_template",
             new=mock_send_template,
         ),
+        patch.object(followup_task.settings, "followups_enabled", True),
     ):
         result = followup_task.send_followups()
 

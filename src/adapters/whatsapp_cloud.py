@@ -151,14 +151,35 @@ def parse_incoming_message(payload: dict) -> Optional[tuple[str, str, Optional[s
         return None
 
 
+def verify_signature(body: bytes, signature_header: str, app_secret: str) -> bool:
+    """
+    Verify Meta X-Hub-Signature-256 header for incoming POST webhooks.
+    Returns True if signature is valid, False otherwise.
+    """
+    import hashlib
+    import hmac
+    import secrets as _sec
+    if not app_secret or not signature_header:
+        return False
+    if not signature_header.startswith("sha256="):
+        return False
+    expected = hmac.new(app_secret.encode("utf-8"), body, hashlib.sha256).hexdigest()
+    received = signature_header[len("sha256="):]
+    return _sec.compare_digest(expected, received)
+
+
 def verify_webhook(params: dict, verify_token: str) -> Optional[str]:
     """
     Handle Meta webhook verification (GET request).
     Returns challenge string if valid, None otherwise.
+    Uses secrets.compare_digest to prevent timing-based token enumeration.
     """
+    import secrets as _secrets
     mode = params.get("hub.mode")
-    token = params.get("hub.verify_token")
+    token = params.get("hub.verify_token") or ""
     challenge = params.get("hub.challenge")
-    if mode == "subscribe" and token == verify_token:
+    if not verify_token:
+        return None
+    if mode == "subscribe" and _secrets.compare_digest(token, verify_token):
         return challenge
     return None

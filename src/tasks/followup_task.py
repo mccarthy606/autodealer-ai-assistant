@@ -162,6 +162,10 @@ def send_followups(self) -> dict:
     asyncio.run() is safe here — each Celery task runs in its own thread/process with no
     existing event loop.
     """
+    if not settings.followups_enabled:
+        logger.info("followup_task: disabled via FOLLOWUPS_ENABLED=false, skipping")
+        return {"sent": 0, "skipped": 0, "errors": 0}
+
     now = datetime.now(UTC)
     sent = 0
     skipped = 0

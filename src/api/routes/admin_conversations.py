@@ -94,7 +94,7 @@ async def conversation_send(conv_id: int, request: Request, db: AsyncSession = D
     if not text:
         return RedirectResponse(url=f"/admin/ui/conversations/{conv_id}", status_code=302)
 
-    stmt = select(Conversation).where(Conversation.id == conv_id)
+    stmt = select(Conversation).where(Conversation.id == conv_id, Conversation.dealership_id == did)
     r = await db.execute(stmt)
     conv = r.scalar_one_or_none()
     if not conv:
@@ -109,8 +109,21 @@ async def conversation_send(conv_id: int, request: Request, db: AsyncSession = D
     db.add(msg)
     conv.last_message_at = datetime.now(UTC)
 
-    # TODO: Send via channel adapter (WhatsApp/ML) if configured
-    # For now: saved to DB, visible in conversation
+    # Deliver via channel adapter
+    if conv.channel == "whatsapp":
+        try:
+            from src.adapters.whatsapp_cloud import WhatsAppCloudAdapter
+            from src.config import settings
+            from sqlalchemy import select as _select
+            from src.db.models import Dealership
+            dealer_r = await db.execute(_select(Dealership).where(Dealership.id == did))
+            dealer = dealer_r.scalar_one_or_none()
+            wa_token = (dealer.whatsapp_access_token if dealer else None) or settings.whatsapp_cloud_token
+            wa_phone_id = (dealer.whatsapp_phone_number_id if dealer else None) or settings.whatsapp_phone_number_id
+            adapter = WhatsAppCloudAdapter(phone_number_id=wa_phone_id, token=wa_token)
+            await adapter.send_text(conv.user_phone, text)
+        except Exception as e:
+            logger.warning("conversation_send: WA delivery failed for conv=%d: %s", conv_id, e)
 
     return RedirectResponse(url=f"/admin/ui/conversations/{conv_id}", status_code=302)
 
@@ -122,7 +135,7 @@ async def conversation_takeover(conv_id: int, request: Request, db: AsyncSession
     if not isinstance(did, int):
         return did
 
-    stmt = select(Conversation).where(Conversation.id == conv_id)
+    stmt = select(Conversation).where(Conversation.id == conv_id, Conversation.dealership_id == did)
     r = await db.execute(stmt)
     conv = r.scalar_one_or_none()
     if conv:
@@ -139,7 +152,7 @@ async def conversation_return_bot(conv_id: int, request: Request, db: AsyncSessi
     if not isinstance(did, int):
         return did
 
-    stmt = select(Conversation).where(Conversation.id == conv_id)
+    stmt = select(Conversation).where(Conversation.id == conv_id, Conversation.dealership_id == did)
     r = await db.execute(stmt)
     conv = r.scalar_one_or_none()
     if conv:

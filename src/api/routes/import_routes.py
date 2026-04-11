@@ -6,15 +6,22 @@ import logging
 from decimal import Decimal
 from typing import Any
 
-from fastapi import APIRouter, Depends, UploadFile, File
+from fastapi import APIRouter, Cookie, Depends, HTTPException, UploadFile, File
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.api.auth import is_authenticated, get_admin_did
 from src.api.deps import get_db
 from src.config import settings
 from src.db.models import InventoryItem, Dealership, ConditionEnum, StatusEnum, Event
 
-router = APIRouter(tags=["import"])
+
+async def _require_admin(admin_session: str = Cookie(default=None)) -> None:
+    if not await is_authenticated(admin_session):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+
+router = APIRouter(tags=["import"], dependencies=[Depends(_require_admin)])
 logger = logging.getLogger(__name__)
 
 
@@ -67,13 +74,12 @@ def _parse_decimal(s: str) -> Decimal | None:
 async def import_csv(
     file: UploadFile = File(...),
     session: AsyncSession = Depends(get_db),
-    dealership_id: int | None = None,
+    did: int = Depends(get_admin_did),
 ) -> dict[str, Any]:
     """
     Import inventory from CSV.
     Expected columns: brand, model, year, condition, price [, trim, km, status, external_id, location ]
     """
-    did = dealership_id or settings.default_dealership_id
     content = await file.read()
     try:
         text = content.decode("utf-8-sig")

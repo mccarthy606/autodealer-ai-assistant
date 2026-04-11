@@ -7,7 +7,7 @@ import secrets
 from typing import Optional
 
 import bcrypt
-from fastapi import Cookie, Request, Response
+from fastapi import Cookie, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
 
 from src.api.rate_limit import get_redis
@@ -59,10 +59,9 @@ async def create_session(response: Response, dealership_id: int) -> None:
         await r.set(f"admin:session:{token_hash}", value, ex=86400)
     else:
         _admin_sessions[token_hash] = dealership_id
-    secure = "localhost" not in settings.database_url
     response.set_cookie(
-        ADMIN_COOKIE, token, httponly=True, samesite="lax",
-        max_age=86400, secure=secure,
+        ADMIN_COOKIE, token, httponly=True, samesite="strict",
+        max_age=86400, secure=settings.session_cookie_secure,
     )
 
 
@@ -85,6 +84,16 @@ async def get_session_dealership_id(session_token: Optional[str]) -> Optional[in
             # Backward compat: old sessions stored plain "1"
             return 1
     return _admin_sessions.get(token_hash)
+
+
+async def get_admin_did(admin_session: str = Cookie(default=None)) -> int:
+    """Dependency: auth + returns session dealership_id. Use in admin API routes."""
+    if not settings.admin_password and not settings.admin_password_hash:
+        return settings.default_dealership_id
+    did = await get_session_dealership_id(admin_session)
+    if did is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    return did
 
 
 async def is_authenticated(session: Optional[str] = None) -> bool:

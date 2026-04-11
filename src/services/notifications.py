@@ -43,11 +43,9 @@ async def handoff_to_manager(
         f"Dirección salón: {address}"
     )
 
-    # 1. Console log
+    # 1. Console log (no PII in log body — full details go via email/webhook only)
     logger.info("=" * 60)
-    logger.info("HANDOFF TO MANAGER")
-    logger.info("=" * 60)
-    logger.info(body)
+    logger.info("HANDOFF TO MANAGER — lead_id=%d dealership_id=%d", lead_id, dealership_id)
     logger.info("=" * 60)
 
     # 2. Email

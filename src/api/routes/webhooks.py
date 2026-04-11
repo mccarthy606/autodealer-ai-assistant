@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.api.deps import get_db
 from src.config import settings
 from src.services.conversation_engine import process_message
-from src.webhooks.whatsapp import extract_whatsapp_message
+from src.webhooks.whatsapp import extract_whatsapp_message, verify_webhook_signature
 
 router = APIRouter(prefix="/webhooks/whatsapp", tags=["webhooks"])
 logger = logging.getLogger(__name__)
@@ -25,6 +25,14 @@ async def whatsapp_webhook(
     For Meta Cloud API format, use /webhooks/whatsapp_cloud instead.
     """
     raw_body = await request.body()
+
+    # Verify HMAC signature when secret is configured
+    if settings.whatsapp_webhook_secret:
+        sig = request.headers.get("X-Hub-Signature-256") or request.headers.get("X-Signature-256") or ""
+        if not verify_webhook_signature(raw_body, sig, settings.whatsapp_webhook_secret):
+            logger.warning("Legacy WhatsApp webhook: invalid signature")
+            return {"error": "invalid signature", "status": 403}
+
     content_type = request.headers.get("content-type", "") or ""
 
     if "application/json" in content_type and raw_body:

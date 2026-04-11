@@ -32,7 +32,7 @@ async def lemon_squeezy_webhook(request: Request, db: AsyncSession = Depends(get
     secret = settings.lemon_squeezy_webhook_secret
     if not secret:
         logger.warning("LEMON_SQUEEZY_WEBHOOK_SECRET not configured, rejecting webhook")
-        return JSONResponse({"error": "not configured"}, status_code=500)
+        return JSONResponse({"error": "not configured"}, status_code=200)
 
     raw_body = await request.body()
     signature = request.headers.get("x-signature", "")
