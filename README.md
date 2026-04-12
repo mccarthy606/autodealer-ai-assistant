@@ -1,147 +1,100 @@
+<div align="center">
+
 # AutoDealer AI Assistant
 
-AI-powered inventory assistant for car dealerships in Argentina. Manages conversations via WhatsApp and MercadoLibre, handles inventory, auto-creates leads, and hands off to managers when needed.
+![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=flat-square&logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=flat-square&logo=postgresql&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-7-DC382D?style=flat-square&logo=redis&logoColor=white)
+![CI](https://img.shields.io/github/actions/workflow/status/mccarthy606/autodealer-ai-assistant/ci.yml?style=flat-square&label=CI)
 
-**Works fully without LLM** (deterministic mode). LLM is optional and only improves phrasing.
+**AI-powered inventory assistant for car dealerships in Argentina.**
+Manages conversations via WhatsApp and MercadoLibre, handles inventory, auto-creates leads, and hands off to managers when needed.
 
-## Quick start (2 minutes)
+Works fully without LLM (deterministic mode). LLM is optional and only improves phrasing.
 
-### 1. Start services
+</div>
+
+---
+
+## Quick Start
 
 ```bash
 docker compose up -d --build
 ```
 
+Open **http://localhost:8000/admin/ui** — add a car, test the bot.
+
+<details>
+<summary><b>Step-by-step setup</b></summary>
+
+### 1. Start services
+```bash
+docker compose up -d --build
+```
 Wait 15-20 seconds for Postgres to start and migrations to run.
 
-### 2. Open admin panel
+### 2. Configure your dealership
+Go to **Settings** → fill in address and business hours.
 
-Go to **http://localhost:8000/admin/ui**
+### 3. Add a car
+Go to **Cars** → **+ Add car** → fill brand, model, year, price, photos → Save.
 
-### 3. Configure your dealership
+### 4. Test the bot
+Go to **Test Bot** and try:
+1. `Hi, do you have Hilux?` → Bot responds with car options
+2. `Can you send photos?` → Bot sends photo URLs
+3. `I want to come tomorrow. My name is Juan.` → Bot confirms, creates lead, switches to MANAGER mode
 
-Go to **Settings** → fill in:
-- Address (e.g. "Av. Libertador 1234, CABA")
-- Business hours (e.g. "Lun-Vie 9-18, Sab 9-13")
+### 5. Optional: WhatsApp / MercadoLibre
+Set environment variables in `.env` and restart.
 
-### 4. Add a car
+</details>
 
-Go to **Cars** → **+ Add car**:
-- Brand: Toyota
-- Model: Hilux
-- Year: 2023
-- Price: 18000000
-- Photos (paste URLs, one per line):
-  ```
-  https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/2021_Toyota_Hilux_Invincible_2.8_Front.jpg/1280px-2021_Toyota_Hilux_Invincible_2.8_Front.jpg
-  https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/2020_Toyota_Hilux_Invincible_X_D-4D_2.8_Rear.jpg/1280px-2020_Toyota_Hilux_Invincible_X_D-4D_2.8_Rear.jpg
-  ```
-- Click **Save car**
+## Conversation Engine
 
-### 5. Test the bot
+Deterministic state machine — no LLM required:
 
-Go to **Test Bot** and try this conversation:
-
-1. `Hi, do you have Hilux?` → Bot responds in **English** with car options
-2. `Can you send photos?` → Bot sends photo URLs/previews
-3. `I want to come tomorrow morning. My name is Juan.` → Bot confirms visit, **creates lead**, switches to **MANAGER mode**
-
-### 6. Check results
-
-- **Leads** → Lead exists with intent "Visit", name "Juan"
-- **Conversations** → Badge shows **MANAGER ACTIVE** + reason "Visit scheduling"
-- **Metrics** → Shows conversations, leads, searches
-
-### 7. Optional: WhatsApp / MercadoLibre
-
-Set environment variables in `.env`:
-
-```bash
-# WhatsApp Business Cloud API
-WHATSAPP_CLOUD_TOKEN=your_token
-WHATSAPP_PHONE_NUMBER_ID=your_phone_id
-WHATSAPP_VERIFY_TOKEN=your_verify_token
-
-# MercadoLibre
-ML_ACCESS_TOKEN=your_token
-ML_USER_ID=your_seller_id
+```
+NEW → BROWSING → PRESENTING → DETAILS → CLOSING → HANDOFF
 ```
 
-Restart: `docker compose restart api`
+**Auto handoff rules:** human request, financing, trade-in, visit scheduling, missing photos, bot unhelpful twice.
 
-Webhook endpoints:
-- WhatsApp: `POST /webhooks/whatsapp_cloud`
-- MercadoLibre: `POST /webhooks/mercadolibre`
+**Multilingual:** auto-detects Spanish/English.
 
 ## Architecture
 
 ```
 src/
 ├── main.py                     # FastAPI entry point
-├── config.py                   # Environment config
-├── db/
-│   ├── models.py               # SQLAlchemy models
-│   └── session.py              # Database sessions
-├── api/routes/
-│   ├── admin.py                # REST API
-│   ├── admin_ui.py             # Admin UI (Jinja2)
-│   ├── webhook_cloud.py        # WhatsApp Cloud webhook
-│   ├── webhook_ml.py           # MercadoLibre webhook
-│   └── debug_routes.py         # Debug endpoint
+├── api/routes/                 # Admin UI, webhooks, debug
 ├── services/
-│   ├── conversation_engine.py  # Main engine (state machine)
+│   ├── conversation_engine.py  # State machine
 │   ├── intent.py               # Rule-based intent detection
-│   ├── entities.py             # Entity extraction
-│   ├── handoff_rules.py        # Auto handoff rules
-│   ├── responder.py            # Multilingual responses
-│   ├── inventory.py            # Inventory search
+│   ├── inventory.py            # Search engine
 │   └── lead_service.py         # Lead creation
 ├── adapters/
 │   ├── whatsapp_cloud.py       # WhatsApp Cloud API
 │   └── mercadolibre.py         # MercadoLibre API
-├── templates/                  # Jinja2 HTML templates
-└── static/admin.css            # Admin UI styles
+└── templates/                  # Jinja2 admin UI
 ```
 
-## Conversation engine
+## Tech Stack
 
-The bot uses a **deterministic state machine** (no LLM required):
+| Layer | Tech |
+|-------|------|
+| API | FastAPI + Uvicorn |
+| UI | Jinja2 templates |
+| DB | PostgreSQL 16 + SQLAlchemy 2.0 (async) |
+| Queue | Redis 7 + Celery |
+| Migrations | Alembic |
+| Deploy | Docker Compose + Caddy |
+| Security | Fernet encryption for credentials |
 
-**Stages:** NEW → BROWSING → PRESENTING → DETAILS → CLOSING → HANDOFF
-
-**Intents detected:**
-- SEARCH_CAR, ASK_PHOTOS, ASK_DETAILS, ASK_PRICE
-- VISIT, FINANCING, TRADE_IN
-- HUMAN (explicit request for salesperson)
-
-**Auto handoff rules:**
-1. Customer asks for human → manager
-2. Financing inquiry → manager
-3. Trade-in inquiry → manager
-4. Visit scheduling → manager (after lead creation)
-5. Photos missing → manager
-6. Bot unhelpful twice → manager
-
-**Multilingual:** Bot auto-detects language (Spanish/English) and responds accordingly.
-
-## Running tests
+## Running Tests
 
 ```bash
-# Install dev dependencies
-pip install aiosqlite
-
-# Run tests
 pytest tests/ -v
 ```
-
-## Tech stack
-
-- **FastAPI** + **Jinja2** (Admin UI)
-- **PostgreSQL** + **SQLAlchemy 2.0** (async)
-- **Redis** + **Celery** (background tasks)
-- **Alembic** (migrations)
-- **Docker Compose** (deployment)
-
-## License
-
-Private — for dealership use.
