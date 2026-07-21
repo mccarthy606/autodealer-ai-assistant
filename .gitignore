@@ -12,3 +12,10 @@ dist/
 *.egg-info/
 .pgdata/
 backups/
+
+# --- migration hygiene 2026-07-20 ---
+.claude/*
+!.claude/settings.json
+graphify-out/
+.playwright-mcp/
+.DS_Store
